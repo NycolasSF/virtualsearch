@@ -21,7 +21,7 @@ Roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile)
   - Opcionalmente video do viewport via `record_video_dir` nativo do Playwright.
 - **Login persistente** (`setup_login.py` popula `.profile-base/` com cookies, demais scripts herdam via clone-on-start).
 - **Batch** de varias URLs com skip-list por SHA1 e CLAUDE.md de progresso.
-- **Transcricao automatica** via [audio-agent](https://github.com/) local (Whisper word-level, opcional).
+- **Transcricao automatica** via [audio-agent](https://github.com/NycolasSF/audio-agent) local (Whisper word-level, opcional).
 - **Notificacoes toast** Windows 10/11.
 
 ---
@@ -44,7 +44,12 @@ python -m playwright install chromium
   choco install ffmpeg          # Windows com Chocolatey
   # ou baixar binario em https://www.gyan.dev/ffmpeg/builds/
   ```
-- **audio-agent** rodando em `localhost:8020` — necessario apenas para `--transcribe`.
+- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario apenas para `--transcribe` (transcricao automatica via Whisper). Instalar:
+  ```powershell
+  git clone https://github.com/NycolasSF/audio-agent.git
+  cd audio-agent
+  # seguir o README do proprio repo para subir o servico em localhost:8020
+  ```
 
 ---
 
