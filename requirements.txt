@@ -1,0 +1,4 @@
+playwright>=1.40
+readability-lxml>=0.8.1
+markdownify>=0.11
+requests>=2.31

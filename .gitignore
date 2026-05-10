@@ -1,0 +1,18 @@
+# Perfil persistente do Chromium usado pelo modo --mode profile
+.profile-base/
+
+# Clones temporarios caso nao sejam limpos (fallback)
+.profile-clones/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Estado persistente do check_status.py (STATUS.md e regenerado do state)
+.status-state.json
+
+# Output temporario dos smoke tests
+.test-output/
+
+# Saida local (se alguem desviar o path default pra ca)
+output/
