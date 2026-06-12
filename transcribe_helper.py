@@ -7,6 +7,11 @@ Uso programatico:
         # result = {"ok": True, "txt": "...", "chars": N}
         # ou      {"ok": False, "error": "..."}
 
+    # Lote paralelo (precisa de httpx instalado):
+    import asyncio
+    from transcribe_helper import transcribe_many_async
+    results = asyncio.run(transcribe_many_async([p1, p2, p3], parallel=3))
+
 Uso CLI:
     python transcribe_helper.py <audio_path>
 
@@ -19,6 +24,7 @@ Notas:
 """
 from __future__ import annotations
 
+import asyncio
 import time
 from pathlib import Path
 
@@ -26,6 +32,11 @@ try:
     import requests
 except ImportError:
     requests = None  # tratado em runtime
+
+try:
+    import httpx  # so usado no modo async (lote paralelo)
+except ImportError:
+    httpx = None
 
 
 AUDIO_AGENT_URL = "http://localhost:8020"
@@ -142,6 +153,125 @@ def transcribe_to_txt(media_path: Path) -> dict:
     txt_path = Path(media_path).with_suffix(".txt")
     txt_path.write_text(result["text"], encoding="utf-8")
     return {"ok": True, "txt": str(txt_path), "chars": len(result["text"]), "id": result.get("id")}
+
+
+_MIME_MAP = {
+    ".webm": "audio/webm",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".mp4": "video/mp4",
+    ".m4a": "audio/mp4",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/ogg",
+    ".flac": "audio/flac",
+}
+
+
+async def _upload_and_wait_async(client, media_path: Path, headers: dict,
+                                  poll_interval: float, timeout_seconds: int) -> dict:
+    """Versao async de upload_and_wait. Usa httpx.AsyncClient compartilhado."""
+    if not media_path.exists():
+        return {"ok": False, "error": f"arquivo nao existe: {media_path}",
+                "path": media_path}
+
+    mime = _MIME_MAP.get(media_path.suffix.lower(), "application/octet-stream")
+    try:
+        with open(media_path, "rb") as f:
+            content = f.read()
+        files = {"file": (media_path.name, content, mime)}
+        r = await client.post(f"{AUDIO_AGENT_URL}/upload", files=files,
+                              headers=headers, timeout=120)
+    except Exception as e:
+        return {"ok": False, "error": f"upload falhou: {e}", "path": media_path}
+
+    if r.status_code != 200:
+        return {"ok": False,
+                "error": f"upload HTTP {r.status_code}: {r.text[:200]}",
+                "path": media_path}
+
+    job = r.json()
+    tid = job.get("id")
+    if not tid:
+        return {"ok": False, "error": f"sem id no response: {job}",
+                "path": media_path}
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        await asyncio.sleep(poll_interval)
+        try:
+            sr = await client.get(
+                f"{AUDIO_AGENT_URL}/transcriptions/{tid}/status",
+                headers=headers, timeout=10,
+            )
+            if sr.status_code != 200:
+                continue
+            data = sr.json()
+            status = data.get("status")
+            if status == "done":
+                if data.get("error"):
+                    return {"ok": False, "error": data["error"],
+                            "id": tid, "path": media_path}
+                return {"ok": True, "text": data.get("text", ""),
+                        "id": tid, "path": media_path}
+            if status == "stuck":
+                return {"ok": False, "error": "job travado (servidor reiniciou)",
+                        "id": tid, "path": media_path}
+        except Exception:
+            continue
+
+    return {"ok": False, "error": "timeout aguardando transcricao",
+            "id": tid, "path": media_path}
+
+
+async def transcribe_many_async(
+    media_paths: list[Path],
+    parallel: int = 2,
+    poll_interval: float = 5.0,
+    timeout_seconds: int = 3600,
+    write_txt: bool = True,
+) -> list[dict]:
+    """Transcreve N arquivos via uploads concorrentes ao audio-agent.
+
+    O servidor recebe todos os uploads de uma vez e processa segundo a
+    capacidade do WorkerPool (Worker-GPU + CPU_WORKERS). Cliente so dispara
+    em paralelo — quem paraleliza de fato eh o servidor.
+
+    write_txt=True: grava .txt no mesmo diretorio de cada midia ao concluir.
+    """
+    if httpx is None:
+        return [{"ok": False, "error": "httpx nao instalado (pip install httpx)",
+                 "path": p} for p in media_paths]
+    if not is_audio_agent_up():
+        return [{"ok": False, "error": "audio-agent offline (localhost:8020)",
+                 "path": p} for p in media_paths]
+    if not _get_token():
+        return [{"ok": False, "error": "auth dev-login falhou", "path": p}
+                for p in media_paths]
+
+    headers = _headers()
+    semaphore = asyncio.Semaphore(parallel)
+
+    async with httpx.AsyncClient() as client:
+        async def _run(p: Path) -> dict:
+            async with semaphore:
+                print(f"   [start] {p.name}")
+                res = await _upload_and_wait_async(
+                    client, p, headers, poll_interval, timeout_seconds,
+                )
+                if res["ok"] and write_txt:
+                    txt_path = p.with_suffix(".txt")
+                    txt_path.write_text(res["text"], encoding="utf-8")
+                    res["txt"] = str(txt_path)
+                    res["chars"] = len(res["text"])
+                    print(f"   [ok] {p.name} -> {res['chars']} chars")
+                elif res["ok"]:
+                    res["chars"] = len(res["text"])
+                    print(f"   [ok] {p.name} ({res['chars']} chars, sem .txt)")
+                else:
+                    print(f"   [err] {p.name}: {res['error']}")
+                return res
+
+        return await asyncio.gather(*(_run(p) for p in media_paths))
 
 
 if __name__ == "__main__":
