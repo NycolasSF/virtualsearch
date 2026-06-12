@@ -93,7 +93,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Grava audio (e opcionalmente video) do <video> de uma pagina (VirtualSearch).",
     )
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/ (raiz)")
+                   help="Pasta de destino. Default: F:/claude-projetos/acervo/library/")
     p.add_argument("--url", help="URL alvo. Omitir usa aba ativa em --mode cdp.")
     p.add_argument("--mode", choices=["fresh", "profile", "cdp"], default="profile")
     p.add_argument("--headed", action="store_true")

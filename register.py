@@ -50,7 +50,7 @@ from urllib.parse import urlparse
 
 # Pasta default da skill quando o usuario nao passa --dest.
 # (Mantida aqui para evitar import circular com browser_common.)
-DEFAULT_LIBRARY_ROOT = Path(r"F:\claude-projetos\library")
+DEFAULT_LIBRARY_ROOT = Path(r"F:\claude-projetos\acervo\library")
 
 MARK_DONE = "[x]"
 MARK_TODO = "[ ]"

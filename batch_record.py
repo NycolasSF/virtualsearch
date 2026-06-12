@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
         description="Grava varias URLs em sequencia (VirtualSearch).",
     )
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/batch_record__<urls-file>__<ts>/")
+                   help="Pasta de destino. Default: F:/claude-projetos/acervo/library/batch_record__<urls-file>__<ts>/")
     p.add_argument("--urls", required=True, help="Arquivo .txt com 1 URL por linha (# = comentario).")
     p.add_argument("--mode", choices=["fresh", "profile", "cdp"], default="profile")
     p.add_argument("--headed", action="store_true")
