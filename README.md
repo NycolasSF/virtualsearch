@@ -14,14 +14,22 @@ Roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile)
 - **Download em lote de imagens** (`<img>` + `background-image`).
 - **Extracao de texto estruturado** em Markdown (readability + fallback raw).
 - **Bypass de anti-copy** via `view-source:`.
+- **Captura HLS** (`hls_grab.py`): baixa a **legenda ASR pronta** (.txt + .vtt) e/ou a **trilha de audio** (.mp3, ffmpeg decripta AES-128) direto do player m3u8 — DOWNLOAD em velocidade de rede, ordens de magnitude mais rapido que gravar em tempo real.
 - **Gravacao de aulas / videos** em qualquer player com tag `<video>` (Hotmart, Orbyka, Vimeo, Teachable, Udemy, Codigo Viral, Eduzz, Kiwify, players custom):
   - Audio principal via `MediaRecorder` + `captureStream()` (`.webm` opus 128k).
   - Dual-watchdog anti-truncate (JS + Python) para players com HLS/DASH + DRM tokens dinamicos.
   - Segmentacao por epoch + concat ffmpeg (sem re-encode).
   - Opcionalmente video do viewport via `record_video_dir` nativo do Playwright.
+- **Extratores de SPA por interceptacao de backend** (filosofia: nao raspar a tela — achar o endpoint que alimenta a SPA e capturar a resposta crua):
+  - `recon_network.py` — passo zero: loga toda resposta XHR/fetch/JSON de uma SPA para descobrir o endpoint.
+  - `scrape_mindmeister.py` — mapa MindMeister COMPLETO (inclui nos colapsados/fora da viewport).
+  - `scrape_manychat.py` — fluxo compartilhado do ManyChat (grafo de blocos com texto real das mensagens).
+  - `scrape_typeform.py` — modelo completo de formulario/quiz Typeform (todas as perguntas + logica + tema).
+  - `scrape_lookerstudio.py` — relatorio Looker Studio: estrutura + dados de cada grafico em CSV/Markdown.
 - **Login persistente** (`setup_login.py` popula `.profile-base/` com cookies, demais scripts herdam via clone-on-start).
 - **Batch** de varias URLs com skip-list por SHA1 e CLAUDE.md de progresso.
 - **Transcricao automatica** via [audio-agent](https://github.com/NycolasSF/audio-agent) local (Whisper word-level, opcional).
+- **Transcricao em lote** (`batch_transcribe.py`): transcreve midia ja gravada no disco, com uploads concorrentes ao audio-agent (`--parallel N`), skip automatico de quem ja tem `.txt` e modo recursivo.
 - **Notificacoes toast** Windows 10/11.
 
 ---
@@ -37,14 +45,16 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
+As deps do `requirements.txt`: `playwright` (browser), `readability-lxml` + `markdownify` (extracao de texto), `requests` (downloads HTTP: imagens, segmentos de legenda HLS) e `httpx` (so para o modo paralelo de `batch_transcribe.py`; sem ele o lote roda sequencial).
+
 ### Opcionais
 
-- **ffmpeg** no PATH — concat de re-arms em `record_video.py`. Sem ele, fallback de append binario (menos robusto, mas funciona).
+- **ffmpeg** no PATH — usado por `hls_grab.py --want audio`/`--want both` (baixa + decripta AES-128 a trilha de audio; **sem ffmpeg a captura de audio via HLS nao funciona**, a de legenda sim) e por `record_video.py` (concat de re-arms; sem ele, fallback de append binario).
   ```powershell
-  choco install ffmpeg          # Windows com Chocolatey
+  winget install Gyan.FFmpeg    # ou choco install ffmpeg
   # ou baixar binario em https://www.gyan.dev/ffmpeg/builds/
   ```
-- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario apenas para `--transcribe` (transcricao automatica via Whisper). Instalar:
+- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar:
   ```powershell
   git clone https://github.com/NycolasSF/audio-agent.git
   cd audio-agent
@@ -93,24 +103,34 @@ A partir dai, qualquer outro script em `--mode profile` (sem `--keep-profile`) j
 | `scrape_images.py` | Baixa `<img>` (srcset maior) + `background-image` em lote | Coletar assets visuais |
 | `scrape_text.py` | HTML to Markdown via readability ou seletor | Extrair copy de blog, LP |
 | `scrape_viewsource.py` | Bypass de anti-copy via `view-source:` | Copiar copy bloqueada |
-| `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD |
+| `hls_grab.py` | **HLS: baixa legenda (ASR) e/ou audio (.mp3) de player m3u8** | **Aula em player HLS — TENTAR ANTES de gravar** |
+| `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD (fallback do HLS) |
 | `batch_record.py` | Grava varias URLs em sequencia com skip-list + CLAUDE.md | Curso inteiro / playlist |
+| `batch_transcribe.py` | Transcreve em lote midia ja no disco (uploads paralelos ao audio-agent) | Pasta de `.webm`/`.mp4` sem `.txt` |
+| `recon_network.py` | Recon de rede de SPA: loga toda resposta XHR/JSON com corpos em disco | Passo zero antes de extrator novo |
+| `scrape_mindmeister.py` | Mapa MindMeister completo via intercept de `content.json` | Mapa mental (nos colapsados inclusos) |
+| `scrape_manychat.py` | Fluxo compartilhado ManyChat via `getSharedFlow` | Funil/chatbot WhatsApp |
+| `scrape_typeform.py` | Modelo completo do form via `window.rendererData` | Formulario/quiz inteiro |
+| `scrape_lookerstudio.py` | Estrutura + dados de relatorio Looker Studio (CSV + MD) | Dashboard de metricas |
 | `setup_login.py` | Login persistente headed (popula `.profile-base/`) | 1x por site gated |
 | `check_status.py` | Roda smoke tests e atualiza `STATUS.md` | Validar instalacao |
+
+> ⚡ **Regra de ordem (aulas com player HLS — Hotmart/Orbyka etc.):** tente `hls_grab.py` PRIMEIRO (download da legenda pronta e/ou da trilha de audio — velocidade de rede) e so use `record_video.py`/`batch_record.py` (MediaRecorder, tempo real, lento) como fallback quando o HLS falhar. Em lote de 200+ aulas isso e a diferenca entre minutos e dias.
 
 Modulos compartilhados (nao chamar direto):
 - `browser_common.py` — `browser_session` context manager (3 modos + record_video opcional).
 - `register.py` — `ExecutionRegister` (checklist vivo) + `validate_dest()` + `compute_default_dest()`.
 - `plan.py` — `write_plan_md()` (PLAN.md inicial: mapeamento + processo).
 - `video_record.py` — `BrowserVideoRecorder` (motor de captura de audio do `<video>`).
-- `transcribe_helper.py` — integracao com audio-agent (Whisper).
+- `legenda_lib.py` — baixa/parseia segmentos webvtt de HLS (usado por `hls_grab.py`).
+- `transcribe_helper.py` — integracao com audio-agent (Whisper); inclui `transcribe_many_async()` para lote paralelo.
 - `win_notify.py` — toast Windows 10/11.
 
 ---
 
 ## `--dest` e opcional
 
-Sem passar `--dest`, todos os scripts gravam num diretorio default (no Claude Code workspace, `F:\claude-projetos\library\`). Para isolar por captura, passe `--dest <pasta>` explicito:
+Sem passar `--dest`, todos os scripts gravam num diretorio default (mundo `acervo` do cosmos, `F:\claude-projetos\acervo\library\`). Para isolar por captura, passe `--dest <pasta>` explicito:
 
 ```
 --dest F:/projeto/concorrente-A-imagens/
@@ -212,7 +232,86 @@ python batch_record.py --dest F:/aulas/curso-cv --urls aulas.txt --no-skip-list
 # Comecar da aula 5, processar so 3:
 python batch_record.py --dest F:/aulas/curso-cv --urls aulas.txt \
     --start-from 5 --limit 3
+
+# === HLS: legenda/audio por download (tentar ANTES de gravar) ===
+python hls_grab.py --url "https://.../aula/123" --dest F:/aulas/a123 --want legenda
+python hls_grab.py --url "https://.../aula/123" --dest F:/aulas/a123 --want audio
+python hls_grab.py --url "https://.../aula/123" --dest F:/aulas/a123 --want both --mode profile
+
+# === Transcricao em lote de midia ja gravada ===
+python batch_transcribe.py --path F:/aulas/curso-X                  # sequencial
+python batch_transcribe.py --path F:/aulas/curso-X --parallel 3     # 3 uploads concorrentes
+python batch_transcribe.py --path F:/aulas/curso-X --recursive      # varre subpastas
+python batch_transcribe.py --path F:/aulas/curso-X --force          # re-transcreve tudo
+
+# === Extratores de SPA (interceptacao de backend) ===
+# Passo zero: descobrir de onde a SPA carrega os dados
+python recon_network.py --url "https://app.exemplo.com/..." --headed --wait 25 --interact
+
+# MindMeister (mapa compartilhado por link, token ?t= na URL)
+python scrape_mindmeister.py --url "https://www.mindmeister.com/app/map/3621262441?t=gTWFXsgMN3"
+python scrape_mindmeister.py --id 3621262441 --mode profile          # mapa privado seu
+
+# ManyChat (fluxo compartilhado)
+python scrape_manychat.py --url "https://app.manychat.com/flowPlayerPage?share_hash=..."
+
+# Typeform (formulario/quiz completo)
+python scrape_typeform.py --url "https://exemplo.typeform.com/to/OPpyh8wI"
+
+# Looker Studio (estrutura; --data navega as paginas e extrai os numeros)
+python scrape_lookerstudio.py --url "https://lookerstudio.google.com/reporting/<ID>"
+python scrape_lookerstudio.py --url "..." --data --pages 5
 ```
+
+---
+
+## Captura HLS — `hls_grab.py`
+
+Players HLS (Hotmart, Orbyka e similares) servem um `master.m3u8` assinado. Em vez de gravar em tempo real, o `hls_grab.py` captura a URL assinada do master (navegando com Playwright e dando play) e dai **baixa**:
+
+- **`--want legenda`** — a faixa textstream (legenda ASR pronta da plataforma) -> `.txt` + `.vtt`. Sem audio, sem Whisper: a transcricao ja vem pronta.
+- **`--want audio`** — a trilha de audio via ffmpeg (baixa + decripta AES-128) -> `.mp3` pronto para o Whisper.
+- **`--want both`** — os dois.
+
+**CDN learnings (aprendido na pratica):**
+- `vod-akm.play.hotmart.com` (Akamai, token `hdntl` por-path) -> passar o MASTER ao ffmpeg.
+- `contentplayer.hotmart.com` (CloudFront, Policy) -> usar a MENOR variante (sub-uri ja assinada no corpo do master), evita baixar video em alta resolucao.
+- Downloads exigem headers `Referer`/`Origin` = `https://cf-embed.play.hotmart.com/`.
+
+Quando o HLS falhar (player sem m3u8 acessivel, DRM custom), caia no `record_video.py` (gravacao em tempo real).
+
+---
+
+## Extratores de SPA — interceptacao de backend
+
+Filosofia da familia: **nao raspar a tela**. Canvas e SPAs renderizam so o que esta na viewport (nos colapsados nem existem no DOM). A solucao robusta e abrir a pagina no Playwright, deixar a PROPRIA SPA chamar o backend com os cookies/headers/CSRF certos, e **interceptar a resposta crua**. Lossless e resiliente a mudanca de frontend.
+
+| Alvo | Endpoint interceptado | Saida |
+|---|---|---|
+| `recon_network.py` | TODAS as respostas XHR/fetch/JSON/GraphQL | `network.log.md` + `bodies/*.json` + `summary.json` |
+| MindMeister | `GET /maps/content.json?idea_id=...` | JSON cru + outline Markdown com 100% dos nos |
+| ManyChat | `GET /manychat/getSharedFlow?share_hash=...` | JSON cru + grafo do fluxo (blocos, botoes, condicoes, A/B) |
+| Typeform | `window.rendererData.form` embutido no HTML (brace-matching) | JSON do modelo + todas as perguntas/logica/tema |
+| Looker Studio | `GET /getReport` (estrutura, prefixo `)]}'`) + `POST /batchedDataV2` (dados, lazy por pagina) | JSON cru + CSV + tabelas Markdown por grafico |
+
+**Fluxo para alvo novo:** rode `recon_network.py` primeiro (ele loga toda resposta de rede promissora com corpo em disco), identifique o endpoint que carrega os dados, e dai escreva/peca um extrator dedicado no mesmo padrao.
+
+Notas por extrator:
+- **MindMeister**: o endpoint tem CSRF + sessao com estado (curl direto da 403); o share token `?t=` e resgatado pela propria SPA. Mapa publico -> `--mode fresh` com `--token`; mapa privado -> `--mode profile` apos `setup_login.py`.
+- **ManyChat**: o fluxo e um grafo direcionado (na real, uma floresta de N entradas) — cada bloco tem `_oid` e aponta o proximo via `target._content_oid`. Tipos: `whatsapp`, `smart_delay`, `action_group`, `multi_condition`, `split` (A/B).
+- **Typeform**: o modelo completo vem no HTML inicial; a chave `form:` nao tem aspas (objeto JS), o parser faz brace-matching ciente de strings antes do `json.loads`.
+- **Looker Studio**: default extrai so a ESTRUTURA (1 request). `--data` navega pagina a pagina capturando o `batchedDataV2` de cada uma (`--pages N` limita). Rotulos legiveis das colunas vem do `getReport` (mapeados pelo nome interno `qt_xxx`).
+
+---
+
+## Transcricao em lote — `batch_transcribe.py`
+
+Complementa o `batch_record.py` (que grava em sequencia): use quando voce **ja tem** os arquivos de midia no disco e quer os `.txt`.
+
+- Extensoes default: `.webm .wav .mp4 .m4a .opus .mp3 .ogg .flac` (`--ext` filtra).
+- **Idempotente**: pula quem ja tem `.txt` valido (>=100 bytes) ao lado; `--force` re-transcreve.
+- `--parallel N` dispara N uploads concorrentes ao audio-agent (via `transcribe_many_async()` do `transcribe_helper.py`, requer `httpx`). Quem paraleliza de fato e o servidor: por default 1 Worker-GPU + 1 Worker-CPU de overflow; para paralelismo agressivo, suba `CPU_WORKERS=2..4` no `.env` do audio-agent.
+- `--recursive` varre subpastas.
 
 ---
 
@@ -363,25 +462,34 @@ Selector errado ou login nao foi feito. Cheque o seletor com DevTools no Chromiu
 - "extrair copy de concorrente para analise"
 - "preciso capturar varios sites em paralelo"
 - "gravar essa aula/video", "preciso da transcricao desse video em pagina"
+- "baixar a legenda pronta dessa aula" / "pegar o audio da aula sem gravar em tempo real" (`hls_grab.py`)
 - "gravar uma aula avulsa de `<site qualquer>`" (qualquer player com `<video>`)
 - "gravar o curso inteiro de `<plataforma>`" (Hotmart, Orbyka, Codigo Viral, Eduzz, Kiwify, Vimeo, Teachable, etc.) via batch
 - "gravar com video tambem, nao so audio" (`--with-video`)
+- "transcrever essa pasta de gravacoes" (`batch_transcribe.py`)
+- "extrair o mapa mental completo do MindMeister" (`scrape_mindmeister.py`)
+- "extrair o fluxo compartilhado do ManyChat" (`scrape_manychat.py`)
+- "extrair todas as perguntas desse Typeform" (`scrape_typeform.py`)
+- "extrair estrutura e dados desse Looker Studio" (`scrape_lookerstudio.py`)
+- "descobrir de onde essa SPA carrega os dados" (`recon_network.py`)
 - "logar nesse site uma vez e deixar persistido para as proximas capturas" (`setup_login.py`)
 
 ## Quando NAO usar
 
 - **Gravar player com Widevine DRM forte** (Netflix/HBO/Disney+) -> nao funciona; o `<video>` retorna black frames para `captureStream()`.
 - **Capturar reuniao/call ao vivo (Zoom, Meet)** -> use o audio-agent direto (loopback WASAPI).
-- **Transcricao de audio ja baixado** -> use `audio-agent` direto (sem precisar reabrir browser).
+- **Transcrever 1 arquivo avulso ja no disco** -> `python transcribe_helper.py <path>` direto (para pasta inteira, ai sim `batch_transcribe.py`).
 
 ---
 
 ## Arquitetura — notas
 
 - **Standalone**: nao depende de nenhuma outra skill. Tem seu proprio motor de gravacao com namespace JS `__vsrec*`, bridge functions proprias, e helpers de transcricao + notify embutidos.
-- **Idempotente**: rodar de novo gera arquivo timestampado novo dentro do `--dest`. `--skip-if-exists` (em `record_video.py`) e `.skip-list.json` (em `batch_record.py`) garantem que re-rodar nao regrava o que ja foi feito.
+- **Ferramentas genericas e imutaveis**: os scripts sao parametrizados por CLI (`--url`, `--urls`, `--dest`, `--want`...). Dados de tarefa (lista de aulas, URLs especificas) vao em arquivo de input, nunca hardcoded no codigo. Detalhe em `SKILL.md` (secao "Escopo de execucao").
+- **Idempotente**: rodar de novo gera arquivo timestampado novo dentro do `--dest`. `--skip-if-exists` (em `record_video.py`), `.skip-list.json` (em `batch_record.py`) e o skip por `.txt` existente (em `batch_transcribe.py`) garantem que re-rodar nao refaz o que ja foi feito.
 - **Nao faz login automatico**: intencional. Login e via `setup_login.py`, rodado uma vez por site. Credenciais nunca passam por argumento de CLI.
 - **Ffmpeg / audio-agent opcionais**: a skill detecta na hora e degrada graciosamente. Sem ffmpeg, fallback binario no concat. Sem audio-agent, `--transcribe` skipa silencioso (o `.webm` continua salvo).
+- **Registro de incidentes**: bugs reais (sintoma -> causa-raiz -> fix -> prevencao) ficam em `BUGFIXES.md`, append-only. Distinto do `STATUS.md`, que cobre checks automaticos + gaps planejados.
 
 ---
 
@@ -393,6 +501,7 @@ virtualsearch/
 ├── INSTALL.md                 ← guia rapido de instalacao
 ├── SKILL.md                   ← skill descriptor para Claude Code
 ├── STATUS.md                  ← auto-gerado por check_status.py
+├── BUGFIXES.md                ← registro append-only de incidentes (sintoma -> fix)
 ├── PLANO-REFATORACAO.md       ← notas de refatoracao em curso
 ├── requirements.txt           ← deps Python
 ├── .gitignore
@@ -401,8 +510,15 @@ virtualsearch/
 ├── scrape_images.py
 ├── scrape_text.py
 ├── scrape_viewsource.py
+├── hls_grab.py                ← legenda/audio HLS por download (pre-record)
 ├── record_video.py
 ├── batch_record.py
+├── batch_transcribe.py        ← transcricao em lote de midia ja no disco
+├── recon_network.py           ← recon de rede de SPA (passo zero de extrator)
+├── scrape_mindmeister.py      ← extrator MindMeister (content.json)
+├── scrape_manychat.py         ← extrator ManyChat (getSharedFlow)
+├── scrape_typeform.py         ← extrator Typeform (window.rendererData)
+├── scrape_lookerstudio.py     ← extrator Looker Studio (getReport + batchedDataV2)
 ├── setup_login.py
 ├── check_status.py
 │
@@ -410,7 +526,8 @@ virtualsearch/
 ├── register.py                ← ExecutionRegister (register.md vivo)
 ├── plan.py                    ← write_plan_md (PLAN.md inicial)
 ├── video_record.py            ← BrowserVideoRecorder (audio do <video>)
-├── transcribe_helper.py       ← integracao com audio-agent
+├── legenda_lib.py             ← segmentos webvtt de HLS (usado por hls_grab)
+├── transcribe_helper.py       ← integracao com audio-agent (+ lote async)
 └── win_notify.py              ← toast Windows 10/11
 ```
 

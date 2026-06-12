@@ -8,6 +8,26 @@ path: F:/claude-projetos/skills/virtualsearch
 
 Toolkit **standalone** de captura programavel de conteudo web com Playwright. Faz desde screenshot ate gravar curso inteiro em batch com transcricao automatica.
 
+## ⛔ ESCOPO DE EXECUCAO (regra dura, prioridade maxima)
+
+**1. So execute scripts `.py` de dentro de `skills/virtualsearch/`.**
+E PROIBIDO executar script de fora desta pasta (`_tmp/`, `orbyka-recon/`, etc.), **MESMO que ele importe esta skill por dentro** (`from browser_common import ...`). Um script externo importar a skill NAO o torna parte dela — a dependencia e invertida.
+
+**2. Os scripts da skill sao FERRAMENTAS GENERICAS e IMUTAVEIS. Voce os INVOCA com parametros, NUNCA os edita para uma tarefa.**
+`hls_grab.py`, `record_video.py`, `batch_record.py` etc. sao parametrizados por CLI (`--url`, `--urls`, `--dest`, `--want`...). Para uma tarefa especifica voce passa parametros — nao altera o codigo. Editar um script da skill para "encaixar" um curso/alvo e PROIBIDO: alem de quebrar a ferramenta para todos, com 2+ capturas simultaneas duas sessoes editariam o mesmo arquivo = corrida/sobrescrita.
+
+**3. Dados especificos de tarefa vao em ARQUIVO DE INPUT, nunca em codigo.**
+Lista de aulas de um curso, hashes, URLs especificas: tudo isso e DADO. Monte um arquivo de input (ex: `aulas.txt`, 1 URL por linha) dentro do `--dest` e aponte a ferramenta pra ele. NUNCA hardcode alvo dentro de um `.py` — foi esse o vicio do `extrai_legendas.py` (a Rise inteira chumbada no codigo, ignorando qualquer `--url`).
+
+**Curso inteiro de legendas — cenario 2-capturas-simultaneas (o jeito certo):**
+- Sessao A: monta `cursoA.txt` -> `<batch HLS> --urls cursoA.txt --dest pastaA --want legenda`
+- Sessao B: monta `cursoB.txt` -> `<batch HLS> --urls cursoB.txt --dest pastaB --want legenda`
+- Mesmo script imutavel (so leitura), inputs e dests diferentes, clones de `.profile-base` diferentes -> ZERO conflito. Ninguem edita codigo.
+
+**Se faltar ferramenta nativa para a tarefa, PARE e avise o operador** para CRIAR uma ferramenta generica nova dentro da skill. Nao improvise rodando script externo, nem editando/duplicando um script existente. Ex: hoje so existe `hls_grab.py` (1 URL); para curso inteiro de legendas falta um batch HLS nativo — pedir para criar, nao gambiarrar.
+
+**4. Registro de bugs (obrigatorio).** Ao encontrar OU corrigir um bug desta skill (comportamento de script ou roteamento errado), registre uma entrada em **`BUGFIXES.md`** (template e regras la dentro). E o historico de incidentes da skill — distinto do `STATUS.md`, que cobre checks automaticos + gaps/melhorias planejadas.
+
 ## Plano de mapeamento + Processo de atualizacao (regra invariante)
 
 **Toda execucao da skill produz, dentro do `--dest`, dois arquivos obrigatorios:**
@@ -102,15 +122,20 @@ python -m playwright install chromium
 | `scrape_images.py` | Baixa `<img>` (srcset maior) + `background-image` em lote | Coletar assets visuais |
 | `scrape_text.py` | HTML -> Markdown via readability ou seletor | Extrair copy de blog, LP |
 | `scrape_viewsource.py` | Bypass de anti-copy via `view-source:` | Copiar copy bloqueada |
-| `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD |
+| `hls_grab.py` | **HLS: baixa legenda (ASR) e/ou audio (.mp3) de player m3u8** | **Aula em player HLS — TENTAR ANTES de gravar** |
+| `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD (fallback do HLS) |
 | `batch_record.py` | Grava varias URLs em sequencia com skip-list + CLAUDE.md | Curso inteiro / playlist |
 | `setup_login.py` | Login persistente headed (popula `.profile-base/`) | 1x por site gated |
+
+> ⚡ **REGRA DE ORDEM (aulas com player HLS — Hotmart/Orbyka etc):** tente **`hls_grab.py` PRIMEIRO** (download da legenda pronta e/ou da trilha de audio — velocidade de rede) e só use **`record_video.py`/`batch_record.py`** (MediaRecorder, **tempo real**, lento) como **fallback** quando o HLS falhar. Em lote de 200+ aulas isso é a diferenca entre minutos e dias.
+> **CDN learnings:** `vod-akm.play.hotmart.com` (Akamai) → passar o master ao ffmpeg; `contentplayer.hotmart.com` (CloudFront) → menor variante. Headers `Referer`/`Origin` = `https://cf-embed.play.hotmart.com/`. A API `…/v1/pages/<hash>/complementary-content` (Bearer + `x-product-id`) lista anexos+links da aula.
 
 Modulos compartilhados (nao chamar direto):
 - `browser_common.py` — `browser_session` context manager (3 modos + record_video opcional)
 - `register.py` — `ExecutionRegister` (checklist vivo) + `validate_dest()` + `compute_default_dest()`
 - `plan.py` — `write_plan_md()` (PLAN.md inicial: mapeamento + processo)
 - `video_record.py` — `BrowserVideoRecorder` (motor de captura de audio do `<video>`)
+- `legenda_lib.py` — baixa/parseia segmentos webvtt de HLS (usado por `hls_grab.py`)
 - `transcribe_helper.py` — integracao com audio-agent (Whisper)
 - `win_notify.py` — toast Windows 10/11
 
