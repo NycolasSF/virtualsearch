@@ -36,13 +36,14 @@ Roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile)
 
 ## Instalacao
 
-Requer Python 3.10+ e Git.
+Requer Python 3.10+ e Git. Funciona em **Windows, macOS e Linux** (guia passo a passo com as diferencas por SO em [`INSTALL.md`](INSTALL.md)).
 
-```powershell
+```bash
 git clone https://github.com/NycolasSF/virtualsearch.git
 cd virtualsearch
 pip install -r requirements.txt
-python -m playwright install chromium
+python -m playwright install chromium                # Windows / macOS
+python -m playwright install --with-deps chromium    # Linux (instala libs de sistema, pede sudo)
 ```
 
 As deps do `requirements.txt`: `playwright` (browser), `readability-lxml` + `markdownify` (extracao de texto), `requests` (downloads HTTP: imagens, segmentos de legenda HLS) e `httpx` (so para o modo paralelo de `batch_transcribe.py`; sem ele o lote roda sequencial).
@@ -50,16 +51,22 @@ As deps do `requirements.txt`: `playwright` (browser), `readability-lxml` + `mar
 ### Opcionais
 
 - **ffmpeg** no PATH — usado por `hls_grab.py --want audio`/`--want both` (baixa + decripta AES-128 a trilha de audio; **sem ffmpeg a captura de audio via HLS nao funciona**, a de legenda sim) e por `record_video.py` (concat de re-arms; sem ele, fallback de append binario).
-  ```powershell
-  winget install Gyan.FFmpeg    # ou choco install ffmpeg
-  # ou baixar binario em https://www.gyan.dev/ffmpeg/builds/
+  ```bash
+  winget install Gyan.FFmpeg    # Windows (ou choco install ffmpeg / binario em gyan.dev)
+  brew install ffmpeg           # macOS
+  sudo apt install ffmpeg       # Linux Debian/Ubuntu (dnf/pacman nos demais)
   ```
-- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar:
-  ```powershell
+- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar (mesmos comandos nos tres sistemas):
+  ```bash
   git clone https://github.com/NycolasSF/audio-agent.git
   cd audio-agent
   # seguir o README do proprio repo para subir o servico em localhost:8020
   ```
+  O Whisper roda bem mais rapido com GPU NVIDIA (CUDA); sem GPU cai para CPU — funciona, so demora mais.
+
+### Diferencas por SO
+
+Toast (`--notify`) so existe no Windows — nos demais e no-op silencioso. `--mode cdp` no macOS/Linux usa qualquer Chrome/Edge/Chromium aberto com `--remote-debugging-port=9224`. O `--dest` default fora do hub Windows e `~/virtualsearch-library` (customizavel via env `VSEARCH_LIBRARY_ROOT`). Tabela completa em [`INSTALL.md`](INSTALL.md) §3.1.
 
 ---
 
@@ -130,7 +137,7 @@ Modulos compartilhados (nao chamar direto):
 
 ## `--dest` e opcional
 
-Sem passar `--dest`, todos os scripts gravam num diretorio default (mundo `acervo` do cosmos, `F:\claude-projetos\acervo\library\`). Para isolar por captura, passe `--dest <pasta>` explicito:
+Sem passar `--dest`, todos os scripts gravam num diretorio default, resolvido nesta ordem: env `VSEARCH_LIBRARY_ROOT` > `F:\claude-projetos\_acervo\library\` (mundo `acervo` do cosmos, se o hub existir na maquina) > `~/virtualsearch-library` (Linux/macOS ou maquina nova). Para isolar por captura, passe `--dest <pasta>` explicito:
 
 ```
 --dest F:/projeto/concorrente-A-imagens/
