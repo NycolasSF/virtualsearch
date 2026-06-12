@@ -35,9 +35,15 @@ from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_
 SKILL_ROOT = Path(__file__).resolve().parent
 PROFILE_BASE = SKILL_ROOT / ".profile-base"
 # Pasta default da skill: tudo que rodar SEM --dest cai aqui (em subpasta auto-gerada).
-# Canonico = mundo `acervo` do cosmos (cl-config: library->acervo/library). A raiz
-# library/ era legado e foi aposentada em 2026-06-01.
-LIBRARY_ROOT = Path(r"F:\claude-projetos\acervo\library")
+# Resolucao: env VSEARCH_LIBRARY_ROOT > path canonico do hub (mundo `acervo` do
+# cosmos, so existe na maquina Windows do hub) > ~/virtualsearch-library (Linux/mac
+# ou maquina nova). A raiz library/ era legado e foi aposentada em 2026-06-01.
+_HUB_LIBRARY = Path(r"F:\claude-projetos\_acervo\library")
+LIBRARY_ROOT = (
+    Path(os.environ["VSEARCH_LIBRARY_ROOT"]) if os.environ.get("VSEARCH_LIBRARY_ROOT")
+    else _HUB_LIBRARY if _HUB_LIBRARY.parent.exists()
+    else Path.home() / "virtualsearch-library"
+)
 # Sub-area onde os auxiliares antigos (output_subdir) escreviam — mantida pra retro-compat.
 LIBRARY_LEGACY_ROOT = LIBRARY_ROOT / "virtualsearch"
 

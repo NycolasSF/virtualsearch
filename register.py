@@ -49,8 +49,14 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 # Pasta default da skill quando o usuario nao passa --dest.
-# (Mantida aqui para evitar import circular com browser_common.)
-DEFAULT_LIBRARY_ROOT = Path(r"F:\claude-projetos\acervo\library")
+# (Mantida aqui para evitar import circular com browser_common — mesma resolucao:
+# env VSEARCH_LIBRARY_ROOT > path canonico do hub > ~/virtualsearch-library.)
+_HUB_LIBRARY = Path(r"F:\claude-projetos\_acervo\library")
+DEFAULT_LIBRARY_ROOT = (
+    Path(os.environ["VSEARCH_LIBRARY_ROOT"]) if os.environ.get("VSEARCH_LIBRARY_ROOT")
+    else _HUB_LIBRARY if _HUB_LIBRARY.parent.exists()
+    else Path.home() / "virtualsearch-library"
+)
 
 MARK_DONE = "[x]"
 MARK_TODO = "[ ]"

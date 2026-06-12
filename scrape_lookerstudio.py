@@ -65,7 +65,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--url", required=True, help="URL do relatorio (looker/datastudio).")
     p.add_argument("--mode", default="fresh", choices=["fresh", "profile", "cdp"])
     p.add_argument("--headed", action="store_true")
-    p.add_argument("--dest", help="Pasta de saida. Default: acervo/library/lookerstudio/<id>/.")
+    p.add_argument("--dest", help="Pasta de saida. Default: _acervo/library/lookerstudio/<id>/.")
     p.add_argument("--timeout", type=int, default=70, help="Segundos esperando o getReport.")
     p.add_argument("--data", action="store_true", help="Tambem extrai os DADOS navegando as paginas.")
     p.add_argument("--pages", type=int, default=0, help="Limite de paginas no modo --data (0=todas).")

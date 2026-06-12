@@ -68,7 +68,7 @@ def parse_args() -> argparse.Namespace:
                    help="Salva TODO corpo (nao so os promissores).")
     p.add_argument("--max-body", type=int, default=8_000_000,
                    help="Tamanho maximo de corpo a salvar (bytes).")
-    p.add_argument("--dest", help="Pasta de saida. Default: acervo/library/_recon-<slug>/.")
+    p.add_argument("--dest", help="Pasta de saida. Default: _acervo/library/_recon-<slug>/.")
     return p.parse_args()
 
 

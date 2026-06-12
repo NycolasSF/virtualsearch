@@ -1,7 +1,7 @@
 ---
 name: virtualsearch
-description: Toolkit standalone de captura programavel de conteudo web via Playwright. Engloba screenshots full-page ou por seletor CSS, download em lote de imagens (<img> + background-image), extracao de texto estruturado em Markdown (readability), bypass de anti-copy via view-source, e gravacao de aulas/videos em qualquer player com tag <video> — captura audio (MediaRecorder + dual-watchdog anti-truncate, segmentacao por epoch e concat ffmpeg) e opcionalmente video do viewport (Playwright record_video). Tem helpers integrados para login persistente (setup_login.py popula .profile-base com cookies), batch de varias URLs com skip-list e CLAUDE.md de progresso (batch_record.py), transcricao automatica via audio-agent local (audio + Whisper), e notificacoes toast no Windows. Totalmente independente: roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile) para paralelizar multiplas instancias sem conflito de lock. CADA execucao SEMPRE escreve dois arquivos no destino: PLAN.md (mapeamento + processo) escrito 1x no inicio, e register.md (checklist vivo + log timestamped) reescrito a cada passo. --dest e opcional — sem ele, default = F:\claude-projetos\library\ (raiz). Use esta skill SEMPRE que o pedido envolver salvar imagem de site, copiar texto de site, screenshot de pagina, scraping programavel, capturar conteudo de landing page, extrair copy de concorrente, baixar imagens em lote, bypass de user-select:none, gravar audio (e/ou video do viewport) de aula em qualquer plataforma de cursos (Hotmart, Orbyka, Kajabi, Vimeo, Teachable, Udemy, plataformas brasileiras como Codigo Viral / Eduzz / Kiwify, ou players custom), gravar varias URLs em batch, automatizar login persistente em sites gated, ou capturar conteudo em paralelo de multiplos sites.
-path: F:/claude-projetos/skills/virtualsearch
+description: Toolkit standalone de captura programavel de conteudo web via Playwright. Engloba screenshots full-page ou por seletor CSS, download em lote de imagens (<img> + background-image), extracao de texto estruturado em Markdown (readability), bypass de anti-copy via view-source, e gravacao de aulas/videos em qualquer player com tag <video> — captura audio (MediaRecorder + dual-watchdog anti-truncate, segmentacao por epoch e concat ffmpeg) e opcionalmente video do viewport (Playwright record_video). Tem helpers integrados para login persistente (setup_login.py popula .profile-base com cookies), batch de varias URLs com skip-list e CLAUDE.md de progresso (batch_record.py), transcricao automatica via audio-agent local (audio + Whisper), e notificacoes toast no Windows. Totalmente independente: roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile) para paralelizar multiplas instancias sem conflito de lock. CADA execucao SEMPRE escreve dois arquivos no destino: PLAN.md (mapeamento + processo) escrito 1x no inicio, e register.md (checklist vivo + log timestamped) reescrito a cada passo. --dest e opcional — sem ele, default = F:\claude-projetos\_acervo\library\ (ou ~/virtualsearch-library fora do hub; env VSEARCH_LIBRARY_ROOT customiza). Use esta skill SEMPRE que o pedido envolver salvar imagem de site, copiar texto de site, screenshot de pagina, scraping programavel, capturar conteudo de landing page, extrair copy de concorrente, baixar imagens em lote, bypass de user-select:none, gravar audio (e/ou video do viewport) de aula em qualquer plataforma de cursos (Hotmart, Orbyka, Kajabi, Vimeo, Teachable, Udemy, plataformas brasileiras como Codigo Viral / Eduzz / Kiwify, ou players custom), gravar varias URLs em batch, automatizar login persistente em sites gated, ou capturar conteudo em paralelo de multiplos sites.
+path: F:/claude-projetos/_skills/virtualsearch
 ---
 
 # VirtualSearch
@@ -46,11 +46,11 @@ Lista de aulas de um curso, hashes, URLs especificas: tudo isso e DADO. Monte um
 
 Quando voce abre `--dest` em qualquer momento da execucao, o `PLAN.md` te diz o que era esperado e o `register.md` te diz onde a execucao esta agora. **Nao existe execucao silenciosa.**
 
-## `--dest` e opcional — default = `F:\claude-projetos\library`
+## `--dest` e opcional — default = `F:\claude-projetos\_acervo\library`
 
 Sem passar `--dest`, todo script grava em:
 ```
-F:\claude-projetos\library\
+F:\claude-projetos\_acervo\library\
 ```
 Os arquivos gerados ali:
 - `<ts>-<slug>.webm` / `.png` / `.md` / `.txt` — artefatos com timestamp no nome (nao colidem entre runs)
@@ -61,13 +61,13 @@ Os arquivos gerados ali:
 
 **Se quiser histor isolado por captura**, passe `--dest <pasta>` explicito:
 ```
---dest F:/claude-projetos/library/curso-codigoviral-aula-1636820/
+--dest F:/claude-projetos/_acervo/library/curso-codigoviral-aula-1636820/
 --dest F:/projeto-X/concorrente-A-imagens/
 ```
 
 A pasta sera criada se nao existir; falha se o path ja existe como arquivo.
 
-Quando rodar via Claude Code em linguagem natural, o agente **mostra o caminho final antes de iniciar**. Se nada for dito, usa o default `F:\claude-projetos\library\`.
+Quando rodar via Claude Code em linguagem natural, o agente **mostra o caminho final antes de iniciar**. Se nada for dito, usa o default `F:\claude-projetos\_acervo\library\`.
 
 ---
 
@@ -150,7 +150,7 @@ Logo apos a invocacao, antes de abrir o browser, a skill escreve um `PLAN.md` no
 
 **Script:** `record_video.py`
 **URL:** https://cursos.codigoviral.com.br/area/conteudo/aula/1636820
-**Destino:** F:/claude-projetos/library/cursos-codigoviral-com-br__...
+**Destino:** F:/claude-projetos/_acervo/library/cursos-codigoviral-com-br__...
 **Modo:** profile
 **Plano gerado em:** 2026-05-04T18:15:30
 
@@ -503,7 +503,7 @@ Selector errado ou login nao foi feito. Cheque o seletor com DevTools no Chromiu
 
 Quando invocada por conversa, Claude **DEVE**:
 
-1. **Resolver o `--dest`**: se o usuario nao especificou, computar o default (`F:/claude-projetos/library/<slug>__<ts>/`) e **mostrar o caminho final antes de iniciar** (sem perguntar — se o usuario quiser outro lugar, ele intervem). Se especificou, usar o caminho dele.
+1. **Resolver o `--dest`**: se o usuario nao especificou, computar o default (`F:/claude-projetos/_acervo/library/<slug>__<ts>/`) e **mostrar o caminho final antes de iniciar** (sem perguntar — se o usuario quiser outro lugar, ele intervem). Se especificou, usar o caminho dele.
 2. Escolher o modo apropriado (`fresh` pra publico, `profile` pra gated, `cdp` soh se o usuario explicitar).
 3. **Pra sites gated, sempre passar pelo `setup_login.py` primeiro** se `.profile-base` ainda nao tem login pro dominio alvo. Nunca colar credenciais no terminal — abrir headed e deixar o usuario logar.
 4. **Pra `record_video.py` / `batch_record.py`**: confirmar **o que capturar**:

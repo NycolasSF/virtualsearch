@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     g.add_argument("--hash", help="share_hash do fluxo.")
     p.add_argument("--mode", default="fresh", choices=["fresh", "profile", "cdp"])
     p.add_argument("--headed", action="store_true")
-    p.add_argument("--dest", help="Pasta de saida. Default: acervo/library/manychat/<hash>/.")
+    p.add_argument("--dest", help="Pasta de saida. Default: _acervo/library/manychat/<hash>/.")
     p.add_argument("--timeout", type=int, default=60)
     return p.parse_args()
 

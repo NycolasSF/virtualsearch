@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--url", required=True, help="URL do form (https://<conta>.typeform.com/to/<id>).")
     p.add_argument("--mode", default="fresh", choices=["fresh", "profile", "cdp"])
     p.add_argument("--headed", action="store_true")
-    p.add_argument("--dest", help="Pasta de saida. Default: acervo/library/typeform/<id>/.")
+    p.add_argument("--dest", help="Pasta de saida. Default: _acervo/library/typeform/<id>/.")
     p.add_argument("--timeout", type=int, default=45)
     return p.parse_args()
 
