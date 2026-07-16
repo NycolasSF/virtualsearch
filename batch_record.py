@@ -242,7 +242,7 @@ def main() -> int:
             ("`--continue-on-error`: em falha de uma URL, segue pra proxima."
              if args.continue_on_error
              else "Sem `--continue-on-error`: a primeira falha aborta o batch."),
-            ("Apos cada URL, transcreve via audio-agent e salva `.txt`." if args.transcribe
+            ("Apos cada URL, transcreve via transcritor e salva `.txt`." if args.transcribe
              else "Sem transcricao automatica."),
             ("Toast Windows ao final de cada URL." if args.notify else "Sem notificacao."),
         ],

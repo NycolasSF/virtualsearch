@@ -47,11 +47,11 @@ _Gerado em 2026-05-04T17:58:13_
 | T06 | [x] `pass` | --dest obrigatorio (falha sem --dest) _(auto)_ | 2026-05-04T17:58:07 | falhou corretamente (exit=2) |
 | T07 | [x] `pass` | record_video.py --help responde _(auto)_ | 2026-05-04T17:58:08 | help responde com flags esperadas |
 | T08 | [x] `pass` | record_video.py --dest obrigatorio _(auto)_ | 2026-05-04T17:58:08 | falhou corretamente (exit=2) |
-| T09 | [x] `pass` | transcribe_helper imports OK _(auto)_ | 2026-05-04T17:58:08 | is_audio_agent_up + transcribe_to_txt importaveis |
+| T09 | [x] `pass` | transcribe_helper imports OK _(auto)_ | 2026-05-04T17:58:08 | is_transcritor_up + transcribe_to_txt importaveis |
 | T15 | [x] `pass` | win_notify import OK _(auto)_ | 2026-05-04T17:58:08 | win_notify.notify importavel |
 | T16 | [x] `pass` | setup_login.py --help responde _(auto)_ | 2026-05-04T17:58:09 | help responde com flags esperadas |
 | T17 | [x] `pass` | batch_record.py --help responde _(auto)_ | 2026-05-04T17:58:09 | help responde com flags esperadas |
-| T18 | [x] `pass` | audio-agent online em :8020 (opcional) _(auto)_ | 2026-05-04T17:58:11 | audio-agent online em localhost:8020 |
+| T18 | [x] `pass` | transcritor online em :8020 (opcional) _(auto)_ | 2026-05-04T17:58:11 | transcritor online em localhost:8020 |
 
 ### Modos
 
@@ -103,6 +103,6 @@ _Gerado em 2026-05-04T17:58:13_
 
 **P02 — Paralelismo em `--mode profile`.** Disparar 2 scripts ao mesmo tempo em modo profile. Cada um clona pra temp unica, nao deve haver lock de `SingletonLock`. Ver se os dois terminam sem travar.
 
-**T13 — `record_video.py` em site real.** Smoke automatico (T07/T08) so confere import + validacao de flags. O fluxo completo (login -> navegar -> achar `<video>` -> gravar -> concat) precisa ser testado em pelo menos um site real (curso da Hotmart, Vimeo publico, player custom). Validar que taxa MB/min >0.5, que watchdog Python re-arma corretamente em stall artificial (minimizar a janela) e que o `.webm` final abre no audio-agent sem rejeicao.
+**T13 — `record_video.py` em site real.** Smoke automatico (T07/T08) so confere import + validacao de flags. O fluxo completo (login -> navegar -> achar `<video>` -> gravar -> concat) precisa ser testado em pelo menos um site real (curso da Hotmart, Vimeo publico, player custom). Validar que taxa MB/min >0.5, que watchdog Python re-arma corretamente em stall artificial (minimizar a janela) e que o `.webm` final abre no transcritor sem rejeicao.
 
 **G06 — Dual-watchdog em player que reconstrua MediaStream.** O dual-watchdog foi validado em campo no Hotmart/Orbyka (modulo 6 do Rise gravado em 2026-04-20). Em outros players (Vimeo, JW, Brightcove, custom HLS) ainda nao foi exercitado. Quando aparecer caso real, registrar comportamento aqui.

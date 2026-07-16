@@ -50,7 +50,7 @@ O `requirements.txt` cobre: `playwright` (browser), `readability-lxml` + `markdo
   brew install ffmpeg             # macOS
   sudo apt install ffmpeg         # Linux Debian/Ubuntu (dnf install ffmpeg / pacman -S ffmpeg nos demais)
   ```
-- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar e subir (mesmos comandos nos tres sistemas):
+- **[transcritor](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar e subir (mesmos comandos nos tres sistemas):
   ```bash
   git clone https://github.com/NycolasSF/audio-agent.git
   cd audio-agent

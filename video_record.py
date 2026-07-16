@@ -11,7 +11,7 @@ arquitetura do dual-watchdog anti-truncate, generalizada para qualquer site:
   - JS globals usam prefixo `__vsrec` (em vez de `__hotmart`) pra nao colidir
     se rodar via --mode cdp num Edge que ja tenha hotmart-recorder ativo.
 
-Saida: .webm (opus). Aceita pelo audio-agent direto no /upload.
+Saida: .webm (opus). Aceita pelo transcritor direto no /upload.
 
 Watchdog anti-truncate — defesa em dois niveis:
 

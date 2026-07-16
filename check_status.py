@@ -144,17 +144,17 @@ def _check_requests_importable() -> tuple[str, str]:
 
 
 def _check_transcribe_helper_imports() -> tuple[str, str]:
-    """transcribe_helper deve importar e expor is_audio_agent_up + transcribe_to_txt."""
+    """transcribe_helper deve importar e expor is_transcritor_up + transcribe_to_txt."""
     proc = subprocess.run(
         [sys.executable, "-c",
-         "from transcribe_helper import is_audio_agent_up, transcribe_to_txt; print('ok')"],
+         "from transcribe_helper import is_transcritor_up, transcribe_to_txt; print('ok')"],
         cwd=str(SKILL_ROOT),
         capture_output=True, text=True, timeout=10,
         encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         return "fail", f"import falhou: {proc.stderr.strip()[:80]}"
-    return "pass", "is_audio_agent_up + transcribe_to_txt importaveis"
+    return "pass", "is_transcritor_up + transcribe_to_txt importaveis"
 
 
 def _check_win_notify_imports() -> tuple[str, str]:
@@ -197,15 +197,15 @@ def _check_batch_record_help() -> tuple[str, str]:
     return "pass", "help responde com flags esperadas"
 
 
-def _check_audio_agent_up() -> tuple[str, str]:
-    """Opcional: ve se audio-agent esta no ar pra --transcribe funcionar."""
+def _check_transcritor_up() -> tuple[str, str]:
+    """Opcional: ve se transcritor esta no ar pra --transcribe funcionar."""
     try:
-        from transcribe_helper import is_audio_agent_up
+        from transcribe_helper import is_transcritor_up
     except Exception as e:
         return "fail", f"import falhou: {e}"
-    if is_audio_agent_up():
-        return "pass", "audio-agent online em localhost:8020"
-    return "skip", "audio-agent offline (subir com: cd audio-agent && python main.py)"
+    if is_transcritor_up():
+        return "pass", "transcritor online em localhost:8020"
+    return "skip", "transcritor offline (subir com: cd F:/claude-projetos/_infra/transcritor && python main.py)"
 
 
 def _check_parallel_fresh() -> tuple[str, str]:
@@ -277,8 +277,8 @@ CHECKS: list[Check] = [
           "Smoke tests", "auto", _check_setup_login_help),
     Check("T17", "batch_record.py --help responde",
           "Smoke tests", "auto", _check_batch_record_help),
-    Check("T18", "audio-agent online em :8020 (opcional)",
-          "Smoke tests", "auto", _check_audio_agent_up),
+    Check("T18", "transcritor online em :8020 (opcional)",
+          "Smoke tests", "auto", _check_transcritor_up),
 
     # Modos avancados
     Check("T10", ".profile-base existe e esta populado", "Modos", "auto", _check_profile_base),
@@ -399,7 +399,7 @@ STATIC_FOOTER = """
 
 **P02 — Paralelismo em `--mode profile`.** Disparar 2 scripts ao mesmo tempo em modo profile. Cada um clona pra temp unica, nao deve haver lock de `SingletonLock`. Ver se os dois terminam sem travar.
 
-**T13 — `record_video.py` em site real.** Smoke automatico (T07/T08) so confere import + validacao de flags. O fluxo completo (login -> navegar -> achar `<video>` -> gravar -> concat) precisa ser testado em pelo menos um site real (curso da Hotmart, Vimeo publico, player custom). Validar que taxa MB/min >0.5, que watchdog Python re-arma corretamente em stall artificial (minimizar a janela) e que o `.webm` final abre no audio-agent sem rejeicao.
+**T13 — `record_video.py` em site real.** Smoke automatico (T07/T08) so confere import + validacao de flags. O fluxo completo (login -> navegar -> achar `<video>` -> gravar -> concat) precisa ser testado em pelo menos um site real (curso da Hotmart, Vimeo publico, player custom). Validar que taxa MB/min >0.5, que watchdog Python re-arma corretamente em stall artificial (minimizar a janela) e que o `.webm` final abre no transcritor sem rejeicao.
 
 **G06 — Dual-watchdog em player que reconstrua MediaStream.** O dual-watchdog foi validado em campo no Hotmart/Orbyka (modulo 6 do Rise gravado em 2026-04-20). Em outros players (Vimeo, JW, Brightcove, custom HLS) ainda nao foi exercitado. Quando aparecer caso real, registrar comportamento aqui.
 """

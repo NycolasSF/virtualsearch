@@ -28,8 +28,8 @@ Roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile)
   - `scrape_lookerstudio.py` — relatorio Looker Studio: estrutura + dados de cada grafico em CSV/Markdown.
 - **Login persistente** (`setup_login.py` popula `.profile-base/` com cookies, demais scripts herdam via clone-on-start).
 - **Batch** de varias URLs com skip-list por SHA1 e CLAUDE.md de progresso.
-- **Transcricao automatica** via [audio-agent](https://github.com/NycolasSF/audio-agent) local (Whisper word-level, opcional).
-- **Transcricao em lote** (`batch_transcribe.py`): transcreve midia ja gravada no disco, com uploads concorrentes ao audio-agent (`--parallel N`), skip automatico de quem ja tem `.txt` e modo recursivo.
+- **Transcricao automatica** via [transcritor](https://github.com/NycolasSF/audio-agent) local (Whisper word-level, opcional).
+- **Transcricao em lote** (`batch_transcribe.py`): transcreve midia ja gravada no disco, com uploads concorrentes ao transcritor (`--parallel N`), skip automatico de quem ja tem `.txt` e modo recursivo.
 - **Notificacoes toast** Windows 10/11.
 
 ---
@@ -56,7 +56,7 @@ As deps do `requirements.txt`: `playwright` (browser), `readability-lxml` + `mar
   brew install ffmpeg           # macOS
   sudo apt install ffmpeg       # Linux Debian/Ubuntu (dnf/pacman nos demais)
   ```
-- **[audio-agent](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar (mesmos comandos nos tres sistemas):
+- **[transcritor](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar (mesmos comandos nos tres sistemas):
   ```bash
   git clone https://github.com/NycolasSF/audio-agent.git
   cd audio-agent
@@ -113,7 +113,7 @@ A partir dai, qualquer outro script em `--mode profile` (sem `--keep-profile`) j
 | `hls_grab.py` | **HLS: baixa legenda (ASR) e/ou audio (.mp3) de player m3u8** | **Aula em player HLS — TENTAR ANTES de gravar** |
 | `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD (fallback do HLS) |
 | `batch_record.py` | Grava varias URLs em sequencia com skip-list + CLAUDE.md | Curso inteiro / playlist |
-| `batch_transcribe.py` | Transcreve em lote midia ja no disco (uploads paralelos ao audio-agent) | Pasta de `.webm`/`.mp4` sem `.txt` |
+| `batch_transcribe.py` | Transcreve em lote midia ja no disco (uploads paralelos ao transcritor) | Pasta de `.webm`/`.mp4` sem `.txt` |
 | `recon_network.py` | Recon de rede de SPA: loga toda resposta XHR/JSON com corpos em disco | Passo zero antes de extrator novo |
 | `scrape_mindmeister.py` | Mapa MindMeister completo via intercept de `content.json` | Mapa mental (nos colapsados inclusos) |
 | `scrape_manychat.py` | Fluxo compartilhado ManyChat via `getSharedFlow` | Funil/chatbot WhatsApp |
@@ -130,7 +130,7 @@ Modulos compartilhados (nao chamar direto):
 - `plan.py` — `write_plan_md()` (PLAN.md inicial: mapeamento + processo).
 - `video_record.py` — `BrowserVideoRecorder` (motor de captura de audio do `<video>`).
 - `legenda_lib.py` — baixa/parseia segmentos webvtt de HLS (usado por `hls_grab.py`).
-- `transcribe_helper.py` — integracao com audio-agent (Whisper); inclui `transcribe_many_async()` para lote paralelo.
+- `transcribe_helper.py` — integracao com transcritor (Whisper); inclui `transcribe_many_async()` para lote paralelo.
 - `win_notify.py` — toast Windows 10/11.
 
 ---
@@ -317,7 +317,7 @@ Complementa o `batch_record.py` (que grava em sequencia): use quando voce **ja t
 
 - Extensoes default: `.webm .wav .mp4 .m4a .opus .mp3 .ogg .flac` (`--ext` filtra).
 - **Idempotente**: pula quem ja tem `.txt` valido (>=100 bytes) ao lado; `--force` re-transcreve.
-- `--parallel N` dispara N uploads concorrentes ao audio-agent (via `transcribe_many_async()` do `transcribe_helper.py`, requer `httpx`). Quem paraleliza de fato e o servidor: por default 1 Worker-GPU + 1 Worker-CPU de overflow; para paralelismo agressivo, suba `CPU_WORKERS=2..4` no `.env` do audio-agent.
+- `--parallel N` dispara N uploads concorrentes ao transcritor (via `transcribe_many_async()` do `transcribe_helper.py`, requer `httpx`). Quem paraleliza de fato e o servidor: por default 1 Worker-GPU + 1 Worker-CPU de overflow; para paralelismo agressivo, suba `CPU_WORKERS=2..4` no `.env` do transcritor.
 - `--recursive` varre subpastas.
 
 ---
@@ -361,7 +361,7 @@ Defesa em duas camadas:
 
 ### Pos-processamento
 
-- `--transcribe`: depois de gravar, envia o `.webm` para o `audio-agent` em `localhost:8020` e salva `.txt` ao lado. Skip silencioso se o agent estiver offline.
+- `--transcribe`: depois de gravar, envia o `.webm` para o `transcritor` em `localhost:8020` e salva `.txt` ao lado. Skip silencioso se o agent estiver offline.
 - `--notify`: toast Windows ao terminar (ou no-op em outros SOs).
 - `--skip-if-exists`: se ja existir `.webm` com filename alvo, pula a gravacao (util quando voce passa `--filename` explicito ou quer re-rodar comando idempotente).
 
@@ -442,7 +442,7 @@ Truncate. Cheque taxa MB/min na secao `## Resultado` do `register.md`. Se `<0.5`
 Re-arms multiplos (raros) cairao em fallback binario. Para prevenir, instale ffmpeg e adicione no PATH.
 
 ### `record_video.py --transcribe`: pulou transcricao
-Mensagem `audio-agent offline em :8020`: o agent nao esta rodando. O `.webm` continua salvo, voce pode transcrever depois com `python transcribe_helper.py <path.webm>`.
+Mensagem `transcritor offline em :8020`: o agent nao esta rodando. O `.webm` continua salvo, voce pode transcrever depois com `python transcribe_helper.py <path.webm>`.
 
 ### `record_video.py --with-video`: viewport.webm vem em preto
 Player com Widevine DRM forte (Netflix-tier). Captura de viewport nao consegue ler frames protegidos. So o audio (`.webm` principal) funciona nesse caso.
@@ -484,7 +484,7 @@ Selector errado ou login nao foi feito. Cheque o seletor com DevTools no Chromiu
 ## Quando NAO usar
 
 - **Gravar player com Widevine DRM forte** (Netflix/HBO/Disney+) -> nao funciona; o `<video>` retorna black frames para `captureStream()`.
-- **Capturar reuniao/call ao vivo (Zoom, Meet)** -> use o audio-agent direto (loopback WASAPI).
+- **Capturar reuniao/call ao vivo (Zoom, Meet)** -> use o transcritor direto (loopback WASAPI).
 - **Transcrever 1 arquivo avulso ja no disco** -> `python transcribe_helper.py <path>` direto (para pasta inteira, ai sim `batch_transcribe.py`).
 
 ---
@@ -495,7 +495,7 @@ Selector errado ou login nao foi feito. Cheque o seletor com DevTools no Chromiu
 - **Ferramentas genericas e imutaveis**: os scripts sao parametrizados por CLI (`--url`, `--urls`, `--dest`, `--want`...). Dados de tarefa (lista de aulas, URLs especificas) vao em arquivo de input, nunca hardcoded no codigo. Detalhe em `SKILL.md` (secao "Escopo de execucao").
 - **Idempotente**: rodar de novo gera arquivo timestampado novo dentro do `--dest`. `--skip-if-exists` (em `record_video.py`), `.skip-list.json` (em `batch_record.py`) e o skip por `.txt` existente (em `batch_transcribe.py`) garantem que re-rodar nao refaz o que ja foi feito.
 - **Nao faz login automatico**: intencional. Login e via `setup_login.py`, rodado uma vez por site. Credenciais nunca passam por argumento de CLI.
-- **Ffmpeg / audio-agent opcionais**: a skill detecta na hora e degrada graciosamente. Sem ffmpeg, fallback binario no concat. Sem audio-agent, `--transcribe` skipa silencioso (o `.webm` continua salvo).
+- **Ffmpeg / transcritor opcionais**: a skill detecta na hora e degrada graciosamente. Sem ffmpeg, fallback binario no concat. Sem transcritor, `--transcribe` skipa silencioso (o `.webm` continua salvo).
 - **Registro de incidentes**: bugs reais (sintoma -> causa-raiz -> fix -> prevencao) ficam em `BUGFIXES.md`, append-only. Distinto do `STATUS.md`, que cobre checks automaticos + gaps planejados.
 
 ---
@@ -534,7 +534,7 @@ virtualsearch/
 ├── plan.py                    ← write_plan_md (PLAN.md inicial)
 ├── video_record.py            ← BrowserVideoRecorder (audio do <video>)
 ├── legenda_lib.py             ← segmentos webvtt de HLS (usado por hls_grab)
-├── transcribe_helper.py       ← integracao com audio-agent (+ lote async)
+├── transcribe_helper.py       ← integracao com transcritor (+ lote async)
 └── win_notify.py              ← toast Windows 10/11
 ```
 

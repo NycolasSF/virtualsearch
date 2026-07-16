@@ -1,8 +1,8 @@
-"""Integracao opcional com audio-agent (localhost:8020) para transcricao Whisper.
+"""Integracao opcional com transcritor (localhost:8020) para transcricao Whisper.
 
 Uso programatico:
-    from transcribe_helper import transcribe_to_txt, is_audio_agent_up
-    if is_audio_agent_up():
+    from transcribe_helper import transcribe_to_txt, is_transcritor_up
+    if is_transcritor_up():
         result = transcribe_to_txt(Path("aula.webm"))
         # result = {"ok": True, "txt": "...", "chars": N}
         # ou      {"ok": False, "error": "..."}
@@ -16,11 +16,11 @@ Uso CLI:
     python transcribe_helper.py <audio_path>
 
 Notas:
-- audio-agent eh dependencia OPCIONAL. Sem ele, esta skill segue funcionando
+- transcritor eh dependencia OPCIONAL. Sem ele, esta skill segue funcionando
   pra capturar audio/video. So a transcricao automatica (--transcribe em
   record_video.py) precisa do agent rodando.
-- O agent fica em F:/claude-projetos/audio-agent/. Subir com:
-    cd F:/claude-projetos/audio-agent && python main.py
+- O agent fica em F:/claude-projetos/_infra/transcritor/. Subir com:
+    cd F:/claude-projetos/_infra/transcritor && python main.py
 """
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ except ImportError:
     httpx = None
 
 
-AUDIO_AGENT_URL = "http://localhost:8020"
+TRANSCRITOR_URL = "http://localhost:8020"
 
 _token_cache: str | None = None
 
@@ -56,7 +56,7 @@ def _get_token() -> str | None:
     if _token_cache:
         return _token_cache
     try:
-        r = requests.post(f"{AUDIO_AGENT_URL}/auth/dev-login", timeout=5)
+        r = requests.post(f"{TRANSCRITOR_URL}/auth/dev-login", timeout=5)
         if r.status_code == 200:
             _token_cache = r.json().get("access_token")
             return _token_cache
@@ -70,12 +70,12 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {tok}"} if tok else {}
 
 
-def is_audio_agent_up() -> bool:
+def is_transcritor_up() -> bool:
     """True se o agent responde em /. Usado pra short-circuit antes de gravar."""
     if not _ensure_requests():
         return False
     try:
-        r = requests.get(f"{AUDIO_AGENT_URL}/", timeout=2)
+        r = requests.get(f"{TRANSCRITOR_URL}/", timeout=2)
         return r.status_code < 500
     except requests.RequestException:
         return False
@@ -104,7 +104,7 @@ def upload_and_wait(media_path: Path, poll_interval: float = 5.0,
     with open(media_path, "rb") as f:
         files = {"file": (media_path.name, f, mime)}
         try:
-            r = requests.post(f"{AUDIO_AGENT_URL}/upload", files=files,
+            r = requests.post(f"{TRANSCRITOR_URL}/upload", files=files,
                               headers=_headers(), timeout=120)
         except requests.RequestException as e:
             return {"ok": False, "error": f"upload falhou: {e}"}
@@ -121,7 +121,7 @@ def upload_and_wait(media_path: Path, poll_interval: float = 5.0,
     while time.time() < deadline:
         time.sleep(poll_interval)
         try:
-            sr = requests.get(f"{AUDIO_AGENT_URL}/transcriptions/{tid}/status",
+            sr = requests.get(f"{TRANSCRITOR_URL}/transcriptions/{tid}/status",
                               headers=_headers(), timeout=10)
             if sr.status_code != 200:
                 continue
@@ -141,8 +141,8 @@ def upload_and_wait(media_path: Path, poll_interval: float = 5.0,
 
 def transcribe_to_txt(media_path: Path) -> dict:
     """Path de audio/video -> .txt no mesmo diretorio. Retorna dict com status."""
-    if not is_audio_agent_up():
-        return {"ok": False, "error": "audio-agent offline (localhost:8020)"}
+    if not is_transcritor_up():
+        return {"ok": False, "error": "transcritor offline (localhost:8020)"}
     if not _get_token():
         return {"ok": False, "error": "auth dev-login falhou (DEV_AUTO_LOGIN=true no .env do agent?)"}
 
@@ -179,7 +179,7 @@ async def _upload_and_wait_async(client, media_path: Path, headers: dict,
         with open(media_path, "rb") as f:
             content = f.read()
         files = {"file": (media_path.name, content, mime)}
-        r = await client.post(f"{AUDIO_AGENT_URL}/upload", files=files,
+        r = await client.post(f"{TRANSCRITOR_URL}/upload", files=files,
                               headers=headers, timeout=120)
     except Exception as e:
         return {"ok": False, "error": f"upload falhou: {e}", "path": media_path}
@@ -200,7 +200,7 @@ async def _upload_and_wait_async(client, media_path: Path, headers: dict,
         await asyncio.sleep(poll_interval)
         try:
             sr = await client.get(
-                f"{AUDIO_AGENT_URL}/transcriptions/{tid}/status",
+                f"{TRANSCRITOR_URL}/transcriptions/{tid}/status",
                 headers=headers, timeout=10,
             )
             if sr.status_code != 200:
@@ -230,7 +230,7 @@ async def transcribe_many_async(
     timeout_seconds: int = 3600,
     write_txt: bool = True,
 ) -> list[dict]:
-    """Transcreve N arquivos via uploads concorrentes ao audio-agent.
+    """Transcreve N arquivos via uploads concorrentes ao transcritor.
 
     O servidor recebe todos os uploads de uma vez e processa segundo a
     capacidade do WorkerPool (Worker-GPU + CPU_WORKERS). Cliente so dispara
@@ -241,8 +241,8 @@ async def transcribe_many_async(
     if httpx is None:
         return [{"ok": False, "error": "httpx nao instalado (pip install httpx)",
                  "path": p} for p in media_paths]
-    if not is_audio_agent_up():
-        return [{"ok": False, "error": "audio-agent offline (localhost:8020)",
+    if not is_transcritor_up():
+        return [{"ok": False, "error": "transcritor offline (localhost:8020)",
                  "path": p} for p in media_paths]
     if not _get_token():
         return [{"ok": False, "error": "auth dev-login falhou", "path": p}
@@ -278,6 +278,6 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
         print("Uso: python transcribe_helper.py <audio_path>")
-        print(f"Status do agent: {'online' if is_audio_agent_up() else 'offline'} ({AUDIO_AGENT_URL})")
+        print(f"Status do agent: {'online' if is_transcritor_up() else 'offline'} ({TRANSCRITOR_URL})")
         sys.exit(1)
     print(transcribe_to_txt(Path(sys.argv[1])))

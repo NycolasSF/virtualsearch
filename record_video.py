@@ -3,7 +3,7 @@
 OBRIGATORIO: --dest <pasta> onde register.md e o .webm sao salvos.
 
 Captura o audio direto do elemento <video> via MediaRecorder + dual-watchdog
-anti-truncate. Saida: opus .webm (~0.96 MB/min). Aceita pelo audio-agent direto
+anti-truncate. Saida: opus .webm (~0.96 MB/min). Aceita pelo transcritor direto
 no /upload.
 
 Modos:
@@ -27,7 +27,7 @@ Audio playback:
   --audible : volume=1, voce ouve a aula tocar.
 
 Pos-processamento opcional:
-  --transcribe       : envia o .webm pro audio-agent (localhost:8020) e salva .txt
+  --transcribe       : envia o .webm pro transcritor (localhost:8020) e salva .txt
   --notify           : toast Windows ao terminar (no-op em outros SOs)
   --skip-if-exists   : se ja existir .webm com filename alvo, pula
 
@@ -121,7 +121,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="volume=1 — voce ouve durante a gravacao.")
 
     p.add_argument("--transcribe", action="store_true",
-                   help="Apos gravar, envia pro audio-agent (localhost:8020) e salva .txt.")
+                   help="Apos gravar, envia pro transcritor (localhost:8020) e salva .txt.")
     p.add_argument("--notify", action="store_true",
                    help="Toast Windows ao terminar (no-op em outros SOs).")
     p.add_argument("--skip-if-exists", action="store_true",
@@ -404,9 +404,9 @@ def record_one_url(args: argparse.Namespace, reg: ExecutionRegister, dest: Path)
         # ---- Pos-processamento: transcribe ----
         if args.transcribe and result and result.get("ok"):
             try:
-                from transcribe_helper import transcribe_to_txt, is_audio_agent_up
-                if is_audio_agent_up():
-                    reg.note("audio-agent online, enviando pra transcricao...")
+                from transcribe_helper import transcribe_to_txt, is_transcritor_up
+                if is_transcritor_up():
+                    reg.note("transcritor online, enviando pra transcricao...")
                     tr = transcribe_to_txt(out_path)
                     if tr.get("ok"):
                         txt_path = Path(tr["txt"])
@@ -414,7 +414,7 @@ def record_one_url(args: argparse.Namespace, reg: ExecutionRegister, dest: Path)
                     else:
                         reg.note(f"transcricao falhou: {tr.get('error')}")
                 else:
-                    reg.note("audio-agent offline em :8020 — pulando transcricao")
+                    reg.note("transcritor offline em :8020 — pulando transcricao")
             except Exception as e:
                 reg.note(f"erro na transcricao: {e}")
 
@@ -496,14 +496,14 @@ def main(argv: list[str] | None = None) -> int:
         objective=(
             f"Gravar audio do <video> de `{args.url or '(aba ativa)'}` "
             f"em `.webm` (opus 128k) e " +
-            ("transcrever via audio-agent." if args.transcribe else "salvar para uso posterior.")
+            ("transcrever via transcritor." if args.transcribe else "salvar para uso posterior.")
         ),
         scope=[
             "Localizar elemento `<video>` no frame correto (auto/main/css selector).",
             "Capturar **audio** via MediaRecorder + dual-watchdog anti-truncate.",
             ("Capturar **video do viewport** via Playwright record_video." if args.with_video
              else "NAO captura frames do viewport (so audio). Use `--with-video` se precisar."),
-            ("Apos gravar, enviar ao audio-agent (`localhost:8020`) e salvar `.txt`." if args.transcribe
+            ("Apos gravar, enviar ao transcritor (`localhost:8020`) e salvar `.txt`." if args.transcribe
              else "Sem transcricao automatica (use `--transcribe` se quiser)."),
             ("Toast Windows ao terminar." if args.notify else "Sem notificacao final."),
         ],
@@ -513,7 +513,7 @@ def main(argv: list[str] | None = None) -> int:
                 "`<ts>-<slug-titulo>.viewport.webm` — frames + audio do viewport (com `--with-video`).",
             ] if args.with_video else []),
             *([
-                "`<ts>-<slug-titulo>.txt` — transcricao via audio-agent (com `--transcribe`).",
+                "`<ts>-<slug-titulo>.txt` — transcricao via transcritor (com `--transcribe`).",
             ] if args.transcribe else []),
             "`register.md` — checklist vivo da execucao (passos + log + resultado).",
             "`PLAN.md` — este arquivo (mapeamento + processo).",

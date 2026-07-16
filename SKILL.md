@@ -1,6 +1,6 @@
 ---
 name: virtualsearch
-description: Toolkit standalone de captura programavel de conteudo web via Playwright. Engloba screenshots full-page ou por seletor CSS, download em lote de imagens (<img> + background-image), extracao de texto estruturado em Markdown (readability), bypass de anti-copy via view-source, e gravacao de aulas/videos em qualquer player com tag <video> — captura audio (MediaRecorder + dual-watchdog anti-truncate, segmentacao por epoch e concat ffmpeg) e opcionalmente video do viewport (Playwright record_video). Tem helpers integrados para login persistente (setup_login.py popula .profile-base com cookies), batch de varias URLs com skip-list e CLAUDE.md de progresso (batch_record.py), transcricao automatica via audio-agent local (audio + Whisper), e notificacoes toast no Windows. Totalmente independente: roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile) para paralelizar multiplas instancias sem conflito de lock. CADA execucao SEMPRE escreve dois arquivos no destino: PLAN.md (mapeamento + processo) escrito 1x no inicio, e register.md (checklist vivo + log timestamped) reescrito a cada passo. --dest e opcional — sem ele, default = F:\claude-projetos\_acervo\library\ (ou ~/virtualsearch-library fora do hub; env VSEARCH_LIBRARY_ROOT customiza). Use esta skill SEMPRE que o pedido envolver salvar imagem de site, copiar texto de site, screenshot de pagina, scraping programavel, capturar conteudo de landing page, extrair copy de concorrente, baixar imagens em lote, bypass de user-select:none, gravar audio (e/ou video do viewport) de aula em qualquer plataforma de cursos (Hotmart, Orbyka, Kajabi, Vimeo, Teachable, Udemy, plataformas brasileiras como Codigo Viral / Eduzz / Kiwify, ou players custom), gravar varias URLs em batch, automatizar login persistente em sites gated, ou capturar conteudo em paralelo de multiplos sites.
+description: Toolkit standalone de captura programavel de conteudo web via Playwright. Engloba screenshots full-page ou por seletor CSS, download em lote de imagens (<img> + background-image), extracao de texto estruturado em Markdown (readability), bypass de anti-copy via view-source, e gravacao de aulas/videos em qualquer player com tag <video> — captura audio (MediaRecorder + dual-watchdog anti-truncate, segmentacao por epoch e concat ffmpeg) e opcionalmente video do viewport (Playwright record_video). Tem helpers integrados para login persistente (setup_login.py popula .profile-base com cookies), batch de varias URLs com skip-list e CLAUDE.md de progresso (batch_record.py), transcricao automatica via transcritor local (audio + Whisper), e notificacoes toast no Windows. Totalmente independente: roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile) para paralelizar multiplas instancias sem conflito de lock. CADA execucao SEMPRE escreve dois arquivos no destino: PLAN.md (mapeamento + processo) escrito 1x no inicio, e register.md (checklist vivo + log timestamped) reescrito a cada passo. --dest e opcional — sem ele, default = F:\claude-projetos\_acervo\library\ (ou ~/virtualsearch-library fora do hub; env VSEARCH_LIBRARY_ROOT customiza). Use esta skill SEMPRE que o pedido envolver salvar imagem de site, copiar texto de site, screenshot de pagina, scraping programavel, capturar conteudo de landing page, extrair copy de concorrente, baixar imagens em lote, bypass de user-select:none, gravar audio (e/ou video do viewport) de aula em qualquer plataforma de cursos (Hotmart, Orbyka, Kajabi, Vimeo, Teachable, Udemy, plataformas brasileiras como Codigo Viral / Eduzz / Kiwify, ou players custom), gravar varias URLs em batch, automatizar login persistente em sites gated, ou capturar conteudo em paralelo de multiplos sites.
 path: F:/claude-projetos/_skills/virtualsearch
 ---
 
@@ -110,7 +110,7 @@ python -m playwright install chromium
 
 **Opcionais** (skill segue funcionando sem):
 - `ffmpeg` no PATH — concat de re-arms em `record_video.py`. Sem ele, fallback de append binario (menos robusto, mas funciona).
-- `audio-agent` rodando em `localhost:8020` — necessario apenas para `--transcribe`. Subir com `cd F:/claude-projetos/audio-agent && python main.py`.
+- `transcritor` rodando em `localhost:8020` — necessario apenas para `--transcribe`. Subir com `cd F:/claude-projetos/_infra/transcritor && python main.py`.
 
 ---
 
@@ -136,7 +136,7 @@ Modulos compartilhados (nao chamar direto):
 - `plan.py` — `write_plan_md()` (PLAN.md inicial: mapeamento + processo)
 - `video_record.py` — `BrowserVideoRecorder` (motor de captura de audio do `<video>`)
 - `legenda_lib.py` — baixa/parseia segmentos webvtt de HLS (usado por `hls_grab.py`)
-- `transcribe_helper.py` — integracao com audio-agent (Whisper)
+- `transcribe_helper.py` — integracao com transcritor (Whisper)
 - `win_notify.py` — toast Windows 10/11
 
 ---
@@ -155,18 +155,18 @@ Logo apos a invocacao, antes de abrir o browser, a skill escreve um `PLAN.md` no
 **Plano gerado em:** 2026-05-04T18:15:30
 
 ## Objetivo
-Gravar audio do <video> de `<URL>` em `.webm` (opus 128k) e transcrever via audio-agent.
+Gravar audio do <video> de `<URL>` em `.webm` (opus 128k) e transcrever via transcritor.
 
 ## Mapeamento (escopo)
 - Localizar elemento <video> no frame correto (auto/main/css selector).
 - Capturar audio via MediaRecorder + dual-watchdog anti-truncate.
 - NAO captura frames do viewport (so audio). Use `--with-video` se precisar.
-- Apos gravar, enviar ao audio-agent (`localhost:8020`) e salvar `.txt`.
+- Apos gravar, enviar ao transcritor (`localhost:8020`) e salvar `.txt`.
 - Toast Windows ao terminar.
 
 ## Artefatos esperados
 - `<ts>-<slug-titulo>.webm` — audio principal (opus 128k stereo).
-- `<ts>-<slug-titulo>.txt` — transcricao via audio-agent.
+- `<ts>-<slug-titulo>.txt` — transcricao via transcritor.
 - `register.md` — checklist vivo da execucao (passos + log + resultado).
 - `PLAN.md` — este arquivo (mapeamento + processo).
 - `<ts>-<slug-titulo>.partNN.webm` — partes intermediarias se houver re-arm.
@@ -368,7 +368,7 @@ Defesa em duas camadas:
 
 ### Pos-processamento
 
-- `--transcribe`: depois de gravar, envia o `.webm` pro `audio-agent` em `localhost:8020` e salva `.txt` ao lado. Skip silencioso se o agent estiver offline.
+- `--transcribe`: depois de gravar, envia o `.webm` pro `transcritor` em `localhost:8020` e salva `.txt` ao lado. Skip silencioso se o agent estiver offline.
 - `--notify`: toast Windows ao terminar (ou no-op em outros SOs).
 - `--skip-if-exists`: se ja existir `.webm` com filename alvo, pula a gravacao (util quando voce passa `--filename` explicito ou quer re-rodar comando idempotente).
 
@@ -458,7 +458,7 @@ Truncate. Cheque taxa MB/min na secao `## Resultado` do `register.md`. Se `<0.5`
 Re-arms multiplos (raros) cairao em fallback binario. Pra prevenir, instale ffmpeg e adicione no PATH (Windows: `choco install ffmpeg` ou baixe binario gyan.dev).
 
 ### `record_video.py --transcribe`: pulou transcricao
-Mensagem `audio-agent offline em :8020`: o agent nao esta rodando. Suba com `cd F:/claude-projetos/audio-agent && python main.py`. O `.webm` continua salvo, voce pode transcrever depois com `python transcribe_helper.py <path.webm>`.
+Mensagem `transcritor offline em :8020`: o agent nao esta rodando. Suba com `cd F:/claude-projetos/_infra/transcritor && python main.py`. O `.webm` continua salvo, voce pode transcrever depois com `python transcribe_helper.py <path.webm>`.
 
 ### `record_video.py --with-video`: viewport.webm vem em preto
 Player com Widevine DRM forte (Netflix-tier). Captura de viewport nao consegue ler frames protegidos. So o audio (`.webm` principal) funciona nesse caso. Cursos brasileiros tipicos (Hotmart, Codigo Viral, Eduzz, Kiwify) nao usam Widevine forte.
@@ -493,9 +493,9 @@ Selector errado ou login nao foi feito. Cheque o seletor com DevTools no Chromiu
 ## Quando NAO usar
 
 - **Gravar player com Widevine DRM forte** (Netflix/HBO/Disney+) -> nao funciona; o `<video>` retorna black frames pra `captureStream()`.
-- **Capturar reuniao/call ao vivo (Zoom, Meet)** -> use o audio-agent direto (loopback WASAPI).
+- **Capturar reuniao/call ao vivo (Zoom, Meet)** -> use o transcritor direto (loopback WASAPI).
 - **Gerar criativo novo** -> use `adsmith` ou `gerar-imagem`.
-- **Transcricao de audio ja baixado** -> use `audio-agent` direto (sem precisar reabrir browser).
+- **Transcricao de audio ja baixado** -> use `transcritor` direto (sem precisar reabrir browser).
 
 ---
 
@@ -520,4 +520,4 @@ Quando invocada por conversa, Claude **DEVE**:
 - **Standalone**: skill nao depende de nenhuma outra (nem do hotmart-recorder). Tem seu proprio motor de gravacao com namespace JS `__vsrec*`, bridge functions proprias, e helpers de transcricao + notify embutidos.
 - **Idempotente**: rodar de novo gera arquivo timestampado novo dentro do `--dest`. `--skip-if-exists` (em `record_video.py`) e `.skip-list.json` (em `batch_record.py`) garantem que re-rodar nao regrava o que ja foi feito.
 - **Nao faz login automatico**: intencional. Login e via `setup_login.py`, rodado uma vez por site. Credenciais nunca passam por argumento de CLI.
-- **Ffmpeg / audio-agent opcionais**: a skill detecta na hora e degrada graciosamente. Sem ffmpeg, fallback binario no concat. Sem audio-agent, `--transcribe` skipa silencioso (o `.webm` continua salvo).
+- **Ffmpeg / transcritor opcionais**: a skill detecta na hora e degrada graciosamente. Sem ffmpeg, fallback binario no concat. Sem transcritor, `--transcribe` skipa silencioso (o `.webm` continua salvo).

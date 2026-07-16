@@ -2,7 +2,7 @@
 
 Complementa `batch_record.py` (que grava em sequencia). Use isto quando voce
 JA TEM os arquivos .webm/.wav/.mp4/.m4a/.opus no disco e quer transcrever em
-lote, opcionalmente em paralelo (uploads concorrentes ao audio-agent).
+lote, opcionalmente em paralelo (uploads concorrentes ao transcritor).
 
 Pula automaticamente quem ja tem .txt valido no lado (>=100 bytes). Re-rodar
 o script eh idempotente.
@@ -25,8 +25,8 @@ Uso:
 
 Sobre paralelismo:
   --parallel N dispara N uploads ao mesmo tempo. O ganho real vem do servidor
-  audio-agent: por default ele roda 1 Worker-GPU + 1 Worker-CPU de overflow.
-  Pra paralelismo agressivo, suba CPU_WORKERS=2..4 no .env do audio-agent
+  transcritor: por default ele roda 1 Worker-GPU + 1 Worker-CPU de overflow.
+  Pra paralelismo agressivo, suba CPU_WORKERS=2..4 no .env do transcritor
   (com CPU_UTIL_LIMIT=50 evita travar a maquina).
 """
 from __future__ import annotations
@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 
 from transcribe_helper import (
-    is_audio_agent_up,
+    is_transcritor_up,
     transcribe_many_async,
     transcribe_to_txt,
 )
@@ -71,7 +71,7 @@ def collect_media(target: Path, exts: tuple[str, ...], recursive: bool) -> list[
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Transcreve em lote midias ja gravadas via audio-agent.",
+        description="Transcreve em lote midias ja gravadas via transcritor.",
     )
     p.add_argument("--path", required=True,
                    help="Pasta ou arquivo unico a processar.")
@@ -102,9 +102,9 @@ def main() -> int:
         print("[err] --parallel deve ser >= 1", file=sys.stderr)
         return 2
 
-    if not is_audio_agent_up():
-        print("[err] audio-agent offline em localhost:8020", file=sys.stderr)
-        print("        sobe com: cd F:/claude-projetos/audio-agent && python main.py",
+    if not is_transcritor_up():
+        print("[err] transcritor offline em localhost:8020", file=sys.stderr)
+        print("        sobe com: cd F:/claude-projetos/_infra/transcritor && python main.py",
               file=sys.stderr)
         return 3
 
