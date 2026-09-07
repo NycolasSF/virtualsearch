@@ -33,7 +33,7 @@ except ImportError:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Extracao de texto via Playwright (VirtualSearch).")
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/ (raiz)")
+                   help="Pasta de destino. Default: F:/claude-projetos/_acervo/library/")
     p.add_argument("--url", help="URL alvo.")
     p.add_argument("--selector", default="body", help="CSS scope. Default 'body' aciona readability.")
     p.add_argument("--filename", help="Nome do arquivo (default: <ts>-<slug>.md|txt dentro de --dest).")

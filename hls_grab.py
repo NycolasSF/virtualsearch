@@ -35,13 +35,20 @@ def ffmpeg_bin():
     w = r"C:\Users\nycol\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe"
     return shutil.which("ffmpeg") or (w if os.path.exists(w) else "ffmpeg")
 
-def capturar_master(page, url, timeout=50):
-    """Navega, dá play e captura a URL do master.m3u8 (assinada). Retorna (body, url)."""
+def capturar_master(page, url, timeout=50, media_code=None):
+    """Navega, dá play e captura a URL do master.m3u8 (assinada). Retorna (body, url).
+
+    Se media_code for passado, só aceita o master cujo URL contém esse code
+    (`/video/<code>/...`). Evita pegar o master de uma aula vizinha que a SPA
+    pre-carrega — causa real de audios trocados em captura de curso inteiro.
+    """
     cap = {"url": None}
     def on_resp(r):
         try:
             u = r.url
             if "hotmart" in u and ".m3u8" in u and "master" in u and not cap["url"]:
+                if media_code and media_code not in u:
+                    return  # master de outra aula (vizinha pre-carregada) — ignora
                 cap["url"] = u
         except Exception:
             pass

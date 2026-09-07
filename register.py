@@ -43,10 +43,21 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import unicodedata
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+
+# O console do Windows e cp1252: um `print()` com emoji no titulo/filename levanta
+# UnicodeEncodeError e o `except` do script marca "falhou" DEPOIS de ja ter salvo
+# tudo (falso negativo — ver BUGFIXES.md BF05). Este modulo e importado por todos
+# os scripts CLI da skill, entao a saida vira UTF-8 aqui, uma vez so.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # Pasta default da skill quando o usuario nao passa --dest.
 # (Mantida aqui para evitar import circular com browser_common — mesma resolucao:
@@ -219,7 +230,7 @@ def compute_default_dest(
 ) -> Path:
     """Default --dest pra quando o usuario nao passa.
 
-    Retorna F:/claude-projetos/library/ (a raiz). Todos os arquivos gerados
+    Retorna F:/claude-projetos/_acervo/library/. Todos os arquivos gerados
     (PLAN.md, register.md, .webm, .png, ...) caem la diretamente.
 
     NOTA sobre colisao: PLAN.md e register.md sao reescritos por cada
@@ -235,7 +246,7 @@ def validate_dest(
     url: str | None = None,
     script: str = "virtualsearch",
 ) -> Path:
-    """Valida --dest. Se None/vazio, usa default F:/claude-projetos/library/.
+    """Valida --dest. Se None/vazio, usa default F:/claude-projetos/_acervo/library/.
 
     Sempre cria a pasta. Retorna Path absoluto.
 

@@ -26,7 +26,7 @@ from register import ExecutionRegister, validate_dest
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Screenshot via Playwright (VirtualSearch).")
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/ (raiz)")
+                   help="Pasta de destino. Default: F:/claude-projetos/_acervo/library/")
     p.add_argument("--url", help="URL alvo. Omitir usa aba ativa (soh em --mode cdp).")
     p.add_argument("--selector", help="CSS selector para recortar (ex: section.hero).")
     p.add_argument("--filename", help="Nome do PNG (sem path). Default: <ts>-<slug>.png dentro de --dest.")

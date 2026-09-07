@@ -74,7 +74,7 @@ COLLECT_JS = r"""
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Scrape imagens via Playwright (VirtualSearch).")
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/ (raiz)")
+                   help="Pasta de destino. Default: F:/claude-projetos/_acervo/library/")
     p.add_argument("--url", help="URL alvo.")
     p.add_argument("--selector", default="body", help="Escopo CSS (default: body).")
     p.add_argument("--min-size", type=int, default=1024, help="Bytes minimos (default: 1024).")

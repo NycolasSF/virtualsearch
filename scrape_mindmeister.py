@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--mode", default="fresh", choices=["fresh", "profile", "cdp"],
                    help="fresh=sem login (publico) | profile=login herdado | cdp=Edge aberto.")
     p.add_argument("--headed", action="store_true", help="Janela visivel (debug/bot-check).")
-    p.add_argument("--dest", help="Pasta de saida. Default: library/mindmeister/<slug>/.")
+    p.add_argument("--dest", help="Pasta de saida. Default: _acervo/library/mindmeister/<slug>/.")
     p.add_argument("--timeout", type=int, default=60, help="Segundos esperando o content.json.")
     return p.parse_args()
 

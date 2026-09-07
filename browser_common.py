@@ -214,6 +214,13 @@ def browser_session(
                 if not context.pages:
                     raise RuntimeError("CDP sem abas. Abra uma antes de rodar.")
                 page = context.pages[0]
+                # pages[0] pode estar em background, e o Chromium faz throttling de
+                # timers em aba nao-visivel: a SPA nunca termina de montar e as
+                # chamadas de API (ex: /navigation) nunca saem. Traz pra frente.
+                try:
+                    page.bring_to_front()
+                except Exception:
+                    pass
             elif new_tab:
                 page = context.new_page()
                 page.goto(url, wait_until="domcontentloaded", timeout=30000)

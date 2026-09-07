@@ -16,3 +16,4 @@ __pycache__/
 
 # Saida local (se alguem desviar o path default pra ca)
 output/
+monitor-telegram/*.log

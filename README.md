@@ -110,7 +110,10 @@ A partir dai, qualquer outro script em `--mode profile` (sem `--keep-profile`) j
 | `scrape_images.py` | Baixa `<img>` (srcset maior) + `background-image` em lote | Coletar assets visuais |
 | `scrape_text.py` | HTML to Markdown via readability ou seletor | Extrair copy de blog, LP |
 | `scrape_viewsource.py` | Bypass de anti-copy via `view-source:` | Copiar copy bloqueada |
+| `crawl_site.py` | **Crawl de site estatico inteiro to markdown, espelhando o path** (HTTP puro, sem browser) | **Curso/docs em GitHub Pages, mkdocs, Docusaurus estatico** |
 | `hls_grab.py` | **HLS: baixa legenda (ASR) e/ou audio (.mp3) de player m3u8** | **Aula em player HLS — TENTAR ANTES de gravar** |
+| `vtt_grab.py` | **Legenda nativa `<track>` (WebVTT) do DOM, pela sessao autenticada** — `--lang`, `--list-langs`, `--txt` | **Plataforma NAO-Hotmart com legenda propria (MasterClass, Coursera…). Player com DRM exige `--headed`** |
+| `hls_curso.py` | Curso inteiro numa sessao viva — **Hotmart Club APENAS** (gate no endpoint `/navigation` da Hotmart) | Curso da Hotmart. **Fora dela trava em silencio — use `vtt_grab.py`** (ver BF07) |
 | `record_video.py` | Grava audio do `<video>` (e opcional viewport-video) de uma URL | Aula em curso, palestra VOD (fallback do HLS) |
 | `batch_record.py` | Grava varias URLs em sequencia com skip-list + CLAUDE.md | Curso inteiro / playlist |
 | `batch_transcribe.py` | Transcreve em lote midia ja no disco (uploads paralelos ao transcritor) | Pasta de `.webm`/`.mp4` sem `.txt` |

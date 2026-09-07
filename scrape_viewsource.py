@@ -27,7 +27,7 @@ except ImportError:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="View-source scraping (VirtualSearch).")
     p.add_argument("--dest", default=None,
-                   help="Pasta de destino. Default: F:/claude-projetos/library/ (raiz)")
+                   help="Pasta de destino. Default: F:/claude-projetos/_acervo/library/")
     p.add_argument("--url", required=True, help="URL alvo (obrigatorio).")
     p.add_argument("--filename", help="Nome do arquivo (default: <ts>-<slug>.<ext>).")
     p.add_argument("--format", choices=["html", "md", "txt"], default="html")
