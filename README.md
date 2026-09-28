@@ -28,7 +28,7 @@ Roda Chromium proprio (fresh) ou perfil persistente com clone-on-start (profile)
   - `scrape_lookerstudio.py` — relatorio Looker Studio: estrutura + dados de cada grafico em CSV/Markdown.
 - **Login persistente** (`setup_login.py` popula `.profile-base/` com cookies, demais scripts herdam via clone-on-start).
 - **Batch** de varias URLs com skip-list por SHA1 e CLAUDE.md de progresso.
-- **Transcricao automatica** via [transcritor](https://github.com/NycolasSF/audio-agent) local (Whisper word-level, opcional).
+- **Transcricao automatica** via [transcritor](https://github.com/NycolasSF/transcritor) local (Whisper word-level, opcional).
 - **Transcricao em lote** (`batch_transcribe.py`): transcreve midia ja gravada no disco, com uploads concorrentes ao transcritor (`--parallel N`), skip automatico de quem ja tem `.txt` e modo recursivo.
 - **Notificacoes toast** Windows 10/11.
 
@@ -56,10 +56,10 @@ As deps do `requirements.txt`: `playwright` (browser), `readability-lxml` + `mar
   brew install ffmpeg           # macOS
   sudo apt install ffmpeg       # Linux Debian/Ubuntu (dnf/pacman nos demais)
   ```
-- **[transcritor](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar (mesmos comandos nos tres sistemas):
+- **[transcritor](https://github.com/NycolasSF/transcritor)** rodando em `localhost:8020` — necessario para `--transcribe` (transcricao automatica via Whisper em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar (mesmos comandos nos tres sistemas):
   ```bash
-  git clone https://github.com/NycolasSF/audio-agent.git
-  cd audio-agent
+  git clone https://github.com/NycolasSF/transcritor.git
+  cd transcritor
   # seguir o README do proprio repo para subir o servico em localhost:8020
   ```
   O Whisper roda bem mais rapido com GPU NVIDIA (CUDA); sem GPU cai para CPU — funciona, so demora mais.

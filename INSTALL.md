@@ -50,10 +50,10 @@ O `requirements.txt` cobre: `playwright` (browser), `readability-lxml` + `markdo
   brew install ffmpeg             # macOS
   sudo apt install ffmpeg         # Linux Debian/Ubuntu (dnf install ffmpeg / pacman -S ffmpeg nos demais)
   ```
-- **[transcritor](https://github.com/NycolasSF/audio-agent)** rodando em `localhost:8020` — necessario para `--transcribe` (em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar e subir (mesmos comandos nos tres sistemas):
+- **[transcritor](https://github.com/NycolasSF/transcritor)** rodando em `localhost:8020` — necessario para `--transcribe` (em `record_video.py`/`batch_record.py`) e para `batch_transcribe.py`. Sem ele a gravacao continua funcionando, so a transcricao e pulada. Instalar e subir (mesmos comandos nos tres sistemas):
   ```bash
-  git clone https://github.com/NycolasSF/audio-agent.git
-  cd audio-agent
+  git clone https://github.com/NycolasSF/transcritor.git
+  cd transcritor
   # seguir o README do proprio repo (deps + modelo Whisper; tem secao dedicada de macOS), depois:
   python main.py                  # sobe o servico em localhost:8020
   ```
@@ -70,6 +70,26 @@ O `requirements.txt` cobre: `playwright` (browser), `readability-lxml` + `markdo
 | `--dest` default | `F:\claude-projetos\_acervo\library` (se o hub existir; senao `~/virtualsearch-library`) | `~/virtualsearch-library` | `~/virtualsearch-library` |
 
 Nada mais precisa de ajuste: os clones temporarios do modo `profile` usam o temp do proprio SO (`tempfile.gettempdir()`), e os scripts aceitam path POSIX normal no `--dest`.
+
+### 3.2 Nota para macOS
+
+- **Python em venv.** O Python do Homebrew bloqueia `pip install` global (PEP 668). Rode tudo num venv:
+  ```bash
+  brew install python@3.12 ffmpeg
+  python3.12 -m venv .venv && source .venv/bin/activate
+  pip install -r requirements.txt
+  python -m playwright install chromium
+  ```
+  Com o venv ativo, `python` funciona; fora dele, use `python3`.
+- **Exemplos com `F:\...`** no `SKILL.md` e no `README.md` sao do Windows. No Mac, use path POSIX (`--dest ~/capturas/curso-x`) ou defina `VSEARCH_LIBRARY_ROOT` (secao 6). Sem nada, o destino e `~/virtualsearch-library`.
+- **`--mode cdp`** precisa de um Chrome aberto com porta de depuracao, num perfil separado:
+  ```bash
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    --remote-debugging-port=9224 --user-data-dir="$HOME/.vsearch-chrome"
+  ```
+- **Gravacao de aula** (`record_video.py`, `batch_record.py`) funciona igual: o audio e capturado dentro da pagina (MediaRecorder), sem driver de audio do sistema.
+- **`--notify`** nao faz nada no Mac (o toast e so Windows); a captura segue normal.
+- **Transcricao (`--transcribe`)** depende do transcritor em `localhost:8020`. No Mac ele roda em CPU (sem GPU da Apple); ver a "Nota para macOS" no README do transcritor.
 
 ## 4. Login persistente (modo profile)
 
